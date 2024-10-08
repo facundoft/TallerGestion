@@ -1,0 +1,42 @@
+﻿@page "/PuestosRegistro"
+
+<h3>Puestos de Registro</h3>
+
+<form id="cedulaForm" @onsubmit="HandleSubmit">
+    <div class="form-group">
+        <label for="cedula">Cédula:</label>
+        <input type="text" class="form-control" id="cedula" @bind="cedula" required placeholder="Ingrese su cédula">
+    </div>
+    <button type="submit" class="btn btn-primary">Enviar</button>
+</form>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-info mt-3">@message</div>
+}
+
+@code {
+    private string cedula;
+    private string message;
+
+    private void HandleSubmit()
+    {
+        // Aquí puedes realizar la lógica de autenticación o procesamiento que necesites
+        if (IsValidCedula(cedula))
+        {
+            message = $"Cédula '{cedula}' registrada con éxito.";
+            // Aquí podrías redirigir o hacer otra acción según tu lógica
+        }
+        else
+        {
+            message = "Cédula inválida. Inténtalo de nuevo.";
+        }
+    }
+
+    private bool IsValidCedula(string cedula)
+    {
+        // Aquí puedes añadir la lógica para validar la cédula
+        // Por simplicidad, solo verificamos si la cédula tiene 8 dígitos
+        return cedula.Length == 8 && cedula.All(char.IsDigit);
+    }
+}
