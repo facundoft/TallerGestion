@@ -1,0 +1,62 @@
+﻿@page "/admin"
+@inject OficinasComercialService OficinasService
+@inject PuestosAtencionService PuestosService
+
+<h3>Administrar Oficinas y Puestos de Atención</h3>
+
+<h4>Alta de Oficina</h4>
+<input @bind="nuevaOficina.Nombre" placeholder="Nombre" />
+<input @bind="nuevaOficina.Direccion" placeholder="Dirección" />
+<input @bind="nuevaOficina.Ciudad" placeholder="Ciudad" />
+<button @onclick="CrearOficina">Crear Oficina</button>
+
+<h4>Borrar Oficina</h4>
+<select @bind="oficinaID">
+    <option value="">Seleccione una Oficina</option>
+    @foreach (var oficina in oficinas)
+    {
+        <option value="@oficina.OficinaId">@oficina.Nombre</option>
+    }
+</select>
+<button @onclick="BorrarOficina">Borrar Oficina</button>
+
+@code {
+    private Oficinascomerciales nuevaOficina = new Oficinascomerciales();
+    private Puestosatencion nuevoPuesto = new Puestosatencion();
+    private int oficinaID, puestoID;
+
+    private List<Oficinascomerciales> oficinas = new();
+    private List<Puestosatencion> puestos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        oficinas = await OficinasService.GetAllOficinasAsync();
+        puestos = await PuestosService.GetAllPuestosAsync();
+    }
+
+    private async Task CrearOficina()
+    {
+        await OficinasService.AddOficinaAsync(nuevaOficina);
+        nuevaOficina = new Oficinascomerciales(); // Resetear el formulario
+        oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+    }
+
+    private async Task CrearPuesto()
+    {
+        await PuestosService.AddPuestoAsync(nuevoPuesto);
+        nuevoPuesto = new Puestosatencion(); // Resetear el formulario
+        puestos = await PuestosService.GetAllPuestosAsync(); // Actualizar la lista de puestos
+    }
+
+    private async Task BorrarOficina()
+    {
+        await OficinasService.DeleteOficinaAsync(oficinaID);
+        oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+    }
+
+    private async Task BorrarPuesto()
+    {
+        await PuestosService.DeletePuestoAsync(puestoID);
+        puestos = await PuestosService.GetAllPuestosAsync(); // Actualizar la lista de puestos
+    }
+}

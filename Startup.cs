@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TallerGestion.Data;
 
 namespace TallerGestion
 {
@@ -19,7 +18,6 @@ namespace TallerGestion
         {
             Configuration = configuration;
         }
-
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -28,9 +26,16 @@ namespace TallerGestion
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddSingleton<WeatherForecastService>();
-        }
+            // services.AddSingleton<WeatherForecastService>();
+            /*
+                 services.AddDbContext<AppDbContext>(options =>
+                      options.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=MiBaseDeDatos;User Id=sa;Password=miContraseña;TrustServerCertificate=True;"));
+                    //options.UseSqlServer("Server=localhost;Database=MiBaseDeDatos;Integrated Security=True;");
 
+             services.AddScoped<OficinasComercialService>();
+             services.AddScoped<PuestosAtencionService>();
+            */
+        }
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
