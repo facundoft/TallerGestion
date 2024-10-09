@@ -27,9 +27,11 @@ public partial class GestionContext : DbContext
 
     public virtual DbSet<Puestosatencion> Puestosatencion { get; set; }
 
+    public virtual DbSet<Tramite> Tramite { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=1234");
+        => optionsBuilder.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,9 +49,10 @@ public partial class GestionContext : DbContext
 
             entity.HasIndex(e => e.PuestoId, "PuestoID");
 
+            entity.HasIndex(e => e.TramiteId, "atenciones_ibfk_5_idx");
+
             entity.Property(e => e.AtencionId).HasColumnName("AtencionID");
             entity.Property(e => e.ClienteId).HasColumnName("ClienteID");
-            entity.Property(e => e.DescripcionTramite).HasMaxLength(100);
             entity.Property(e => e.Estado).HasMaxLength(20);
             entity.Property(e => e.FechaHoraAtencion).HasColumnType("datetime");
             entity.Property(e => e.FechaHoraFinalizacion).HasColumnType("datetime");
@@ -74,6 +77,10 @@ public partial class GestionContext : DbContext
             entity.HasOne(d => d.Puesto).WithMany(p => p.Atenciones)
                 .HasForeignKey(d => d.PuestoId)
                 .HasConstraintName("atenciones_ibfk_3");
+
+            entity.HasOne(d => d.Tramite).WithMany(p => p.Atenciones)
+                .HasForeignKey(d => d.TramiteId)
+                .HasConstraintName("atenciones_ibfk_5");
         });
 
         modelBuilder.Entity<Clientes>(entity =>
@@ -102,7 +109,7 @@ public partial class GestionContext : DbContext
 
             entity.HasOne(d => d.Oficina).WithMany(p => p.Gestioncalidad)
                 .HasForeignKey(d => d.OficinaId)
-                .HasConstraintName("gestioncalidad_ibfk_1");
+                .HasConstraintName("estadisticas_ibfk_1");
         });
 
         modelBuilder.Entity<Oficinascomerciales>(entity =>
@@ -149,6 +156,18 @@ public partial class GestionContext : DbContext
             entity.HasOne(d => d.Oficina).WithMany(p => p.Puestosatencion)
                 .HasForeignKey(d => d.OficinaId)
                 .HasConstraintName("puestosatencion_ibfk_1");
+        });
+
+        modelBuilder.Entity<Tramite>(entity =>
+        {
+            entity.HasKey(e => e.TramiteId).HasName("PRIMARY");
+
+            entity.ToTable("tramite");
+
+            entity.Property(e => e.TramiteId).HasColumnName("TramiteID");
+            entity.Property(e => e.DescripcionTramite)
+                .IsRequired()
+                .HasMaxLength(100);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -1,4 +1,8 @@
 ﻿@page "/PuestosRegistro"
+@using TallerGestion.Models
+@using TallerGestion.Data
+@using TallerGestion.Data.Persistence
+@inject AtencionesService atencionservice
 
 <h3>Puestos de Registro</h3>
 
@@ -19,13 +23,34 @@
     private string cedula;
     private string message;
 
-    private void HandleSubmit()
+    // Simulate fetching office ID (later we'll use a hidden field)
+    private int OficinaID = 1; // Assume we get this value from the form later
+
+    private async Task HandleSubmit()
     {
-        // Aquí puedes realizar la lógica de autenticación o procesamiento que necesites
         if (IsValidCedula(cedula))
         {
+            // Create necessary objects: Cliente, Tramite, and Atencion
+            Clientes cliente = new Clientes { CedulaIdentidad = cedula };
+            Tramite tramite = new Tramite { DescripcionTramite = "Pendiente de definir" }; // Placeholder description
+            Atenciones atencion = new Atenciones(
+                                                cliente.ClienteId,
+                                                OficinaID,
+                                                null,  // PuestoID is null for now
+                                                null,  // OperarioID is null for now
+                                                tramite.TramiteId,
+                                                DateTime.Now, // FechaHoraLlegada
+                                                null,  // FechaHoraAtencion
+                                                null,  // FechaHoraFinalizacion
+                                                "En Espera",  // Estado
+                                                0  // SegundaLlamado
+                                                );
+
+
+            // Persist the Atencion object using the service
+            await atencionservice.CrearNuevaAtencionAsync(atencion);
+
             message = $"Cédula '{cedula}' registrada con éxito.";
-            // Aquí podrías redirigir o hacer otra acción según tu lógica
         }
         else
         {
@@ -35,8 +60,7 @@
 
     private bool IsValidCedula(string cedula)
     {
-        // Aquí puedes añadir la lógica para validar la cédula
-        // Por simplicidad, solo verificamos si la cédula tiene 8 dígitos
+        // Simple cedula validation (8 digits)
         return cedula.Length == 8 && cedula.All(char.IsDigit);
     }
 }

@@ -27,8 +27,6 @@ public partial class Atenciones
 
     public sbyte? SegundaLlamado { get; set; }
 
-    public string DescripcionTramite { get; set; }
-
     public virtual Clientes Cliente { get; set; }
 
     public virtual Oficinascomerciales Oficina { get; set; }
@@ -36,4 +34,20 @@ public partial class Atenciones
     public virtual Operarios Operario { get; set; }
 
     public virtual Puestosatencion Puesto { get; set; }
+
+    public virtual Tramite Tramite { get; set; }
+
+    public Atenciones(int? clientId, int? oficinaId, int? puestoId, int? operarioId, int? tramiteId, DateTime? fechaHoraLlegada, DateTime? fechaHoraAtencion, DateTime? fechaHoraFinalizacion, string estado, sbyte? segundaLlamado)
+    {
+        ClienteId = clientId;
+        OficinaId = oficinaId;
+        PuestoId = puestoId;
+        OperarioId = operarioId;
+        TramiteId = tramiteId;
+        FechaHoraLlegada = fechaHoraLlegada;
+        FechaHoraAtencion = fechaHoraAtencion;
+        FechaHoraFinalizacion = fechaHoraFinalizacion;
+        Estado = estado;
+        SegundaLlamado = segundaLlamado;
+    }
 }
