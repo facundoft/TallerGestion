@@ -13,7 +13,5 @@ public partial class Operarios
 
     public int? OficinaId { get; set; }
 
-    public virtual ICollection<Atenciones> Atenciones { get; set; } = new List<Atenciones>();
-
     public virtual Oficinascomerciales Oficina { get; set; }
 }

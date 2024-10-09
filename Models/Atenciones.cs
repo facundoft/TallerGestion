@@ -37,6 +37,11 @@ public partial class Atenciones
 
     public virtual Tramite Tramite { get; set; }
 
+    public Atenciones()
+    {
+    }
+
+
     public Atenciones(int? clientId, int? oficinaId, int? puestoId, int? operarioId, int? tramiteId, DateTime? fechaHoraLlegada, DateTime? fechaHoraAtencion, DateTime? fechaHoraFinalizacion, string estado, sbyte? segundaLlamado)
     {
         ClienteId = clientId;

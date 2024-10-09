@@ -11,7 +11,5 @@ public partial class Puestosatencion
 
     public int? NumeroPuesto { get; set; }
 
-    public virtual ICollection<Atenciones> Atenciones { get; set; } = new List<Atenciones>();
-
     public virtual Oficinascomerciales Oficina { get; set; }
 }

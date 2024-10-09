@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TallerGestion.Data.Persistence;
+using TallerGestion.Models;
 
 namespace TallerGestion
 {
@@ -26,6 +29,13 @@ namespace TallerGestion
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            services.AddScoped<AtencionesService>();
+            services.AddDbContext<GestionContext>(options =>
+                      options.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo"));
+            //options.UseSqlServer("Server=localhost;Database=MiBaseDeDatos;Integrated Security=True;");
+
+
+            //services.AddScoped<PuestosAtencionService>();
             // services.AddSingleton<WeatherForecastService>();
             /*
                  services.AddDbContext<AppDbContext>(options =>

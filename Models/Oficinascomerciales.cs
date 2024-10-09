@@ -13,10 +13,6 @@ public partial class Oficinascomerciales
 
     public string Ciudad { get; set; }
 
-    public virtual ICollection<Atenciones> Atenciones { get; set; } = new List<Atenciones>();
-
-    public virtual ICollection<Gestioncalidad> Gestioncalidad { get; set; } = new List<Gestioncalidad>();
-
     public virtual ICollection<Operarios> Operarios { get; set; } = new List<Operarios>();
 
     public virtual ICollection<Puestosatencion> Puestosatencion { get; set; } = new List<Puestosatencion>();

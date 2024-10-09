@@ -11,6 +11,18 @@
         <label for="cedula">Cédula:</label>
         <input type="text" class="form-control" id="cedula" @bind="cedula" required placeholder="Ingrese su cédula">
     </div>
+
+    <div class="form-group">
+        <label for="tramite">Trámite:</label>
+        <select id="tramite" class="form-control" @bind="selectedTramiteId" required>
+            <option value="">Seleccione un trámite</option>
+            @foreach (var tramite in tramitesDisponibles)
+            {
+                <option value="@tramite.TramiteId">@tramite.DescripcionTramite</option>
+            }
+        </select>
+    </div>
+
     <button type="submit" class="btn btn-primary">Enviar</button>
 </form>
 
@@ -22,39 +34,60 @@
 @code {
     private string cedula;
     private string message;
+    private int selectedTramiteId;
+    private List<Tramite> tramitesDisponibles = new List<Tramite>();
 
     // Simulate fetching office ID (later we'll use a hidden field)
     private int OficinaID = 1; // Assume we get this value from the form later
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Cargar los trámites disponibles desde el servicio
+        tramitesDisponibles = await atencionservice.ObtenerTramitesAsync();
+    }
+
     private async Task HandleSubmit()
     {
-        if (IsValidCedula(cedula))
+        if (IsValidCedula(cedula) && selectedTramiteId != 0)
         {
-            // Create necessary objects: Cliente, Tramite, and Atencion
-            Clientes cliente = new Clientes { CedulaIdentidad = cedula };
-            Tramite tramite = new Tramite { DescripcionTramite = "Pendiente de definir" }; // Placeholder description
+            // Verificar si el cliente ya existe
+            var clienteExistente = await atencionservice.ObtenerClientePorCedulaAsync(cedula);
+            Clientes cliente;
+
+            if (clienteExistente != null)
+            {
+                // Si el cliente ya existe, lo usamos
+                cliente = clienteExistente;
+            }
+            else
+            {
+                // Si el cliente no existe, lo creamos
+                cliente = new Clientes { CedulaIdentidad = cedula };
+                await atencionservice.CrearClienteAsync(cliente);
+            }
+
+            // Crear la atención usando el trámite seleccionado
             Atenciones atencion = new Atenciones(
-                                                cliente.ClienteId,
-                                                OficinaID,
-                                                null,  // PuestoID is null for now
-                                                null,  // OperarioID is null for now
-                                                tramite.TramiteId,
-                                                DateTime.Now, // FechaHoraLlegada
-                                                null,  // FechaHoraAtencion
-                                                null,  // FechaHoraFinalizacion
-                                                "En Espera",  // Estado
-                                                0  // SegundaLlamado
-                                                );
+                cliente.ClienteId,
+                OficinaID,
+                null,  // PuestoID is null for now
+                null,  // OperarioID is null for now
+                selectedTramiteId,
+                DateTime.Now, // FechaHoraLlegada
+                null,  // FechaHoraAtencion
+                null,  // FechaHoraFinalizacion
+                "En Espera",  // Estado
+                0  // SegundaLlamado
+            );
 
-
-            // Persist the Atencion object using the service
+            // Persistir la atención
             await atencionservice.CrearNuevaAtencionAsync(atencion);
 
             message = $"Cédula '{cedula}' registrada con éxito.";
         }
         else
         {
-            message = "Cédula inválida. Inténtalo de nuevo.";
+            message = "Cédula o trámite inválidos. Inténtalo de nuevo.";
         }
     }
 
