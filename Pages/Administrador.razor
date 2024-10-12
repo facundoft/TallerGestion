@@ -2,45 +2,83 @@
 @using TallerGestion.Models
 @using TallerGestion.Data
 @using TallerGestion.Data.Persistence
+@using Microsoft.EntityFrameworkCore;
+@using MySql.Data.MySqlClient;
+
+
 @inject OficinasComercialService OficinasService
+
 <h3>Administrar Oficinas y Puestos de Atención</h3>
 
+@if (errorMessage != String.Empty)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>@errorMessage</strong>
+        <button type="button" class="close" @onclick=LimpiarMensajes data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+@if (successMessage != String.Empty)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>@successMessage</strong>
+        <button @onclick=LimpiarMensajes type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+
 <h4>Info oficina</h4>
-<select @onchange="MostrarDetallesOficina">
+<select class="form-control" @onchange="MostrarDetallesOficina">
     <option value="">Seleccione una Oficina</option>
     @foreach (var oficina in oficinas)
     {
         <option value="@oficina.OficinaId">@oficina.Nombre</option>
     }
 </select>
-<p>ID: @oficinaSeleccionada?.OficinaId</p>
-<p>Nombre:  @oficinaSeleccionada?.Nombre</p>
-<p>Dirección:  @oficinaSeleccionada?.Direccion</p>
-<p>Ciudad: @oficinaSeleccionada?.Ciudad </p>
+<ul>
 
+    <li>ID: @oficinaSeleccionada?.OficinaId</li>
+    <li>Nombre:  @oficinaSeleccionada?.Nombre</li>
+    <li>Dirección:  @oficinaSeleccionada?.Direccion</li>
+    <li>Ciudad: @oficinaSeleccionada?.Ciudad </li>
+    <li>
+        Puestos de atencion:
+        <ol>
+            @if (oficinaSeleccionada != null)
+            {
+
+                @foreach (var puesto in oficinaSeleccionada?.Puestosatencion)
+                {
+                    <li class="mb-1">
+                        <button class="btn btn-danger btn-sm">Borrar</button>
+                    </li>
+                }
+                <button class="btn btn-primary" @onclick=AgregarPuesto >Agregar Puesto</button>
+            }
+        </ol>
+    </li>
+</ul>
+<button disabled=@(oficinaSeleccionada==null) class="btn btn-info">Modificar</button>
+<button disabled=@(oficinaSeleccionada==null) class="btn btn-danger" @onclick="BorrarOficina">Borrar Oficina</button>
+<hr />
 <h4>Alta de Oficina</h4>
 <input @bind="nuevaOficina.Nombre" placeholder="Nombre" />
 <input @bind="nuevaOficina.Direccion" placeholder="Dirección" />
 <input @bind="nuevaOficina.Ciudad" placeholder="Ciudad" />
-<button @onclick="CrearOficina">Crear Oficina</button>
-
-<h4>Borrar Oficina</h4>
-<select @bind="deleteOficinaID" >
-    <option value="">Seleccione una Oficina</option>
-    @foreach (var oficina in oficinas)
-    {
-        <option value="@oficina.OficinaId">@oficina.Nombre</option>
-    }
-</select>
-<button @onclick="BorrarOficina">Borrar Oficina</button>
-
-
-
+<button class="btn btn-primary" @onclick="CrearOficina">Crear Oficina</button>
+@*
+   ******************************    FIN HTML       ******************************
+   ******************************  INICIO CODIGO C# ******************************
+*@
 @code {
-
-    private int deleteOficinaID, puestoID, oficinaID;
-    private Oficinascomerciales oficinaSeleccionada;
-    private Oficinascomerciales nuevaOficina = new Oficinascomerciales();
+    private string successMessage = "";
+    private string errorMessage = "";
+    private int puestoID, oficinaID;
+    private Oficinascomerciales oficinaSeleccionada = null;
+    private Oficinascomerciales nuevaOficina = new Oficinascomerciales { Nombre = "", Ciudad = "", Direccion = "" };
     private List<Oficinascomerciales> oficinas = new();
     private List<Puestosatencion> puestos = new();
 
@@ -59,6 +97,7 @@
                 if (oficina.OficinaId == id)
                 {
                     oficinaSeleccionada = oficina;
+                    oficinaSeleccionada.Puestosatencion = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
                     break;
                 }
             }
@@ -66,15 +105,69 @@
     }
     private async Task CrearOficina()
     {
+        LimpiarMensajes();
+        bool emptyFields = nuevaOficina.Nombre == String.Empty || nuevaOficina.Direccion == String.Empty || nuevaOficina.Ciudad == String.Empty;
+        if (emptyFields || (nuevaOficina.Nombre.Length < 3 || nuevaOficina.Direccion.Length < 3 || nuevaOficina.Ciudad.Length < 3))
+        {
+            errorMessage = "Campos inválidos";
+
+            return;
+        }
         await OficinasService.AddOficinaAsync(nuevaOficina);
-        nuevaOficina = new Oficinascomerciales(); // Resetear el formulario
+        nuevaOficina = new Oficinascomerciales { Nombre = "", Ciudad = "", Direccion = "" }; // Resetear el formulario
+        successMessage = "Oficina creada satisfactoriamente";
         oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+        TimeoutMensajes();
     }
 
     private async Task BorrarOficina()
     {
-        await OficinasService.DeleteOficinaAsync(deleteOficinaID);
-        oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+        LimpiarMensajes();
+        int deleteOficinaID = oficinaSeleccionada.OficinaId;
+        try
+        {
+            var nombre = oficinaSeleccionada.Nombre;
+            await OficinasService.DeleteOficinaAsync(deleteOficinaID);
+            oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+            oficinaSeleccionada = null;
+            successMessage = "Oficina borrada correctamente: " + nombre;
+            TimeoutMensajes();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Message.Contains("Cannot delete or update a parent row"))
+        {
+            errorMessage = "No se puede eliminar la oficina. Primero debe eliminar los operarios asociados.";
+            TimeoutMensajes();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+    private void LimpiarMensajes()
+    {
+        errorMessage = "";
+        successMessage = "";
+        StateHasChanged();
+    }
+    private async Task TimeoutMensajes()
+    {
+        await Task.Delay(5000);
+        LimpiarMensajes();
+
     }
 
+    private async Task AgregarPuesto()
+    {
+            oficinaSeleccionada.Puestosatencion.Add(new Puestosatencion());
+    }
+
+    private async Task<List<Puestosatencion>> GetPuestosAtencion()
+    {
+        List<Puestosatencion> puestos = new();
+        if(oficinaSeleccionada != null)
+        {
+            puestos = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
+        }
+        return puestos;
+    }
 }

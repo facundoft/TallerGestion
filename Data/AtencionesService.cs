@@ -2,8 +2,9 @@
 using TallerGestion.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using TallerGestion.Data.Persistence;
 
-namespace TallerGestion.Data.Persistence
+namespace TallerGestion.Data
 {
     public class AtencionesService
     {
