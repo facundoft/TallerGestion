@@ -1,8 +1,22 @@
 ﻿@page "/admin"
+@using TallerGestion.Models
+@using TallerGestion.Data
+@using TallerGestion.Data.Persistence
 @inject OficinasComercialService OficinasService
-@inject PuestosAtencionService PuestosService
-
 <h3>Administrar Oficinas y Puestos de Atención</h3>
+
+<h4>Info oficina</h4>
+<select @onchange="MostrarDetallesOficina">
+    <option value="">Seleccione una Oficina</option>
+    @foreach (var oficina in oficinas)
+    {
+        <option value="@oficina.OficinaId">@oficina.Nombre</option>
+    }
+</select>
+<p>ID: @oficinaSeleccionada?.OficinaId</p>
+<p>Nombre:  @oficinaSeleccionada?.Nombre</p>
+<p>Dirección:  @oficinaSeleccionada?.Direccion</p>
+<p>Ciudad: @oficinaSeleccionada?.Ciudad </p>
 
 <h4>Alta de Oficina</h4>
 <input @bind="nuevaOficina.Nombre" placeholder="Nombre" />
@@ -11,7 +25,7 @@
 <button @onclick="CrearOficina">Crear Oficina</button>
 
 <h4>Borrar Oficina</h4>
-<select @bind="oficinaID">
+<select @bind="deleteOficinaID" >
     <option value="">Seleccione una Oficina</option>
     @foreach (var oficina in oficinas)
     {
@@ -20,20 +34,36 @@
 </select>
 <button @onclick="BorrarOficina">Borrar Oficina</button>
 
-@code {
-    private Oficinascomerciales nuevaOficina = new Oficinascomerciales();
-    private Puestosatencion nuevoPuesto = new Puestosatencion();
-    private int oficinaID, puestoID;
 
+
+@code {
+
+    private int deleteOficinaID, puestoID, oficinaID;
+    private Oficinascomerciales oficinaSeleccionada;
+    private Oficinascomerciales nuevaOficina = new Oficinascomerciales();
     private List<Oficinascomerciales> oficinas = new();
     private List<Puestosatencion> puestos = new();
 
     protected override async Task OnInitializedAsync()
     {
         oficinas = await OficinasService.GetAllOficinasAsync();
-        puestos = await PuestosService.GetAllPuestosAsync();
     }
 
+    private async Task MostrarDetallesOficina(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out int id))
+        {
+            oficinaID = id;
+            foreach (var oficina in oficinas)
+            {
+                if (oficina.OficinaId == id)
+                {
+                    oficinaSeleccionada = oficina;
+                    break;
+                }
+            }
+        }
+    }
     private async Task CrearOficina()
     {
         await OficinasService.AddOficinaAsync(nuevaOficina);
@@ -41,22 +71,10 @@
         oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
     }
 
-    private async Task CrearPuesto()
-    {
-        await PuestosService.AddPuestoAsync(nuevoPuesto);
-        nuevoPuesto = new Puestosatencion(); // Resetear el formulario
-        puestos = await PuestosService.GetAllPuestosAsync(); // Actualizar la lista de puestos
-    }
-
     private async Task BorrarOficina()
     {
-        await OficinasService.DeleteOficinaAsync(oficinaID);
+        await OficinasService.DeleteOficinaAsync(deleteOficinaID);
         oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
     }
 
-    private async Task BorrarPuesto()
-    {
-        await PuestosService.DeletePuestoAsync(puestoID);
-        puestos = await PuestosService.GetAllPuestosAsync(); // Actualizar la lista de puestos
-    }
 }

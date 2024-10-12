@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TallerGestion.Data.Persistence;
-using TallerGestion.Models;
 
 namespace TallerGestion
 {
@@ -30,8 +29,9 @@ namespace TallerGestion
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddScoped<AtencionesService>();
+            services.AddScoped<OficinasComercialService>();
             services.AddDbContext<GestionContext>(options =>
-                      options.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo"));
+                      options.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=1234"));
             //options.UseSqlServer("Server=localhost;Database=MiBaseDeDatos;Integrated Security=True;");
 
 

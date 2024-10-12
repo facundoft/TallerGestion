@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System;
 using TallerGestion.Models;
 using Microsoft.EntityFrameworkCore;
+using TallerGestion.Data.Persistence;
 public class OficinasComercialService
 {
     private readonly GestionContext _context;
@@ -31,5 +32,15 @@ public class OficinasComercialService
             _context.Oficinascomerciales.Remove(oficina);
             await _context.SaveChangesAsync();
         }
+    }
+
+    public async Task<Oficinascomerciales> GetOficinaByIdAsync(int id)
+    {
+        return await _context.Oficinascomerciales.FindAsync(id);
+    }
+    public async Task UpdateOficinaAsync(Oficinascomerciales oficina)
+    {
+        _context.Entry(oficina).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
     }
 }

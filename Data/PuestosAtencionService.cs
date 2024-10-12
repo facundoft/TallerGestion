@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System;
 using TallerGestion.Models;
+using TallerGestion.Data.Persistence;
 
 public class PuestosAtencionService
 {
