@@ -29,11 +29,19 @@
 @if (!string.IsNullOrEmpty(message))
 {
     <div class="alert alert-info mt-3">@message</div>
+
+}
+
+@if (!string.IsNullOrEmpty(@estado))
+{
+
+    <div class="alert alert-info mt-3">@estado</div>
 }
 
 @code {
     private string cedula;
     private string message;
+    private string estado;
     private int selectedTramiteId;
     private List<Tramite> tramitesDisponibles = new List<Tramite>();
 
@@ -80,10 +88,17 @@
                 0  // SegundaLlamado
             );
 
-            // Persistir la atención
-            await atencionservice.CrearNuevaAtencionAsync(atencion);
+            estado = await atencionservice.ObtenerEstadoAtencionPorCedulaAsync(cliente.CedulaIdentidad);
 
-            message = $"Cédula '{cedula}' registrada con éxito.";
+            if (!estado.Equals("En Espera", StringComparison.OrdinalIgnoreCase))
+            {
+                message = "El cliente ya se encuentra en espera o fue atendido";
+                await atencionservice.CrearNuevaAtencionAsync(atencion);
+            }
+            else
+            {
+                message = "Cliente sigue en espera.";
+            }
         }
         else
         {

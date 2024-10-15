@@ -3,6 +3,7 @@ using TallerGestion.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using TallerGestion.Data.Persistence;
+using System.Linq;
 
 namespace TallerGestion.Data
 {
@@ -42,6 +43,46 @@ namespace TallerGestion.Data
         {
             return await _context.Tramite.ToListAsync();
         }
+
+
+
+        public async Task<Clientes> ObtenerEstadoAtencion(string cedula)
+        {
+            return await _context.Clientes.FirstOrDefaultAsync(c => c.CedulaIdentidad == cedula);
+        }
+
+        //public async Task<string> ObtenerEstadoAtencionAsync(string cedula)
+        //{
+        //    var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.CedulaIdentidad == cedula);
+        //    if (cliente == null)
+        //    {
+        //        return null; // Cliente no encontrado
+        //    }
+
+        //    var atencion = await _context.Atenciones
+        //        .Where(a => a.ClienteId == cliente.ClienteId)
+        //        .OrderByDescending(a => a.FechaHoraLlegada) // Ordenar por la fecha de llegada para obtener la atención más reciente
+        //        .FirstOrDefaultAsync();
+
+        //    return atencion?.Estado; // Devolver el estado de la atención o null si no hay atenciones
+        //}
+
+        public async Task<string> ObtenerEstadoAtencionPorCedulaAsync(string cedula)
+        {
+            string query = @"
+    SELECT a.Estado
+    FROM clientes c
+    LEFT JOIN atenciones a ON c.ClienteID = a.ClienteID
+    WHERE c.CedulaIdentidad = {0}";
+
+            var resultado = await _context.Atenciones
+                .FromSqlRaw(query, cedula)
+                .Select(a => a.Estado)  // Proyectar solo el campo Estado
+                .FirstOrDefaultAsync();  // Obtener el primer resultado o null si no hay
+
+            return resultado;  // Devuelve el estado o null si no se encontró
+        }
+
 
     }
 }
