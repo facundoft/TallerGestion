@@ -18,7 +18,7 @@ public class PuestosAtencionService
         return await _context.Puestosatencion.ToListAsync();
     }
     */
-    public async Task AddPuestoAsync(Puestosatencion puesto)
+    public async Task AddPuestoAsync(PuestoAtencion puesto)
     {
         _context.Puestosatencion.Add(puesto);
         await _context.SaveChangesAsync();

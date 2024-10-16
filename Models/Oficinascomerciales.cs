@@ -15,5 +15,5 @@ public partial class Oficinascomerciales
 
     public virtual ICollection<Operarios> Operarios { get; set; } = new List<Operarios>();
 
-    public virtual ICollection<Puestosatencion> Puestosatencion { get; set; } = new List<Puestosatencion>();
+    public virtual ICollection<PuestoAtencion> Puestosatencion { get; set; } = new List<PuestoAtencion>();
 }

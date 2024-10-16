@@ -33,7 +33,7 @@ public partial class Atenciones
 
     public virtual Operarios Operario { get; set; }
 
-    public virtual Puestosatencion Puesto { get; set; }
+    public virtual PuestoAtencion Puesto { get; set; }
 
     public virtual Tramite Tramite { get; set; }
 

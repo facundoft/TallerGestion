@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace TallerGestion.Models;
 
-public partial class Puestosatencion
+public partial class PuestoAtencion
 {
     public int PuestoId { get; set; }
 

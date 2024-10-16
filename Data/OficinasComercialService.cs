@@ -45,7 +45,7 @@ public class OficinasComercialService
         _context.Entry(oficina).State = EntityState.Modified;
         await _context.SaveChangesAsync();
     }
-    public async Task<List<Puestosatencion>> GetPuestosatencionOficina(int oficinaId)
+    public async Task<List<PuestoAtencion>> GetPuestosatencionOficina(int oficinaId)
     {
         return await _context.Puestosatencion
                              .Where(p => p.OficinaId == oficinaId)

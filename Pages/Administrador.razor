@@ -4,17 +4,34 @@
 @using TallerGestion.Data.Persistence
 @using Microsoft.EntityFrameworkCore;
 @using MySql.Data.MySqlClient;
-
 ﻿@using TallerGestion.Models
 @using TallerGestion.Data.Persistence
 
-
-
-
-
+@inject IJSRuntime JS
 @inject OficinasComercialService OficinasService
 
-
+@inject PuestosAtencionService PuestosService
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                
+                <input class="form-control mb-1 mt-1" @bind="nombre" placeholder="Nombre" />
+                <input class="form-control mb-1" @bind="direccion" placeholder="Dirección" />
+                <input class="form-control mb-1" @bind="ciudad" placeholder="Ciudad" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" @onclick="ModificarOficina" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <h3>Administrar Oficinas y Puestos de Atención</h3>
 
 @if (errorMessage != String.Empty)
@@ -60,7 +77,7 @@
                 @foreach (var puesto in oficinaSeleccionada?.Puestosatencion)
                 {
                     <li class="mb-1">
-                        <button class="btn btn-danger btn-sm">Borrar</button>
+                        <button class="btn btn-danger btn-sm"  @onclick="() => BorrarPuestoAtencion(puesto.PuestoId)">Borrar</button>
                     </li>
                 }
                 <button class="btn btn-primary" @onclick=AgregarPuesto >Agregar Puesto</button>
@@ -68,7 +85,7 @@
         </ol>
     </li>
 </ul>
-<button disabled=@(oficinaSeleccionada==null) class="btn btn-info">Modificar</button>
+<button disabled=@(oficinaSeleccionada==null) type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#exampleModal">Modificar</button>
 <button disabled=@(oficinaSeleccionada==null) class="btn btn-danger" @onclick="BorrarOficina">Borrar Oficina</button>
 <hr />
 <h4>Alta de Oficina</h4>
@@ -76,18 +93,30 @@
 <input @bind="nuevaOficina.Direccion" placeholder="Dirección" />
 <input @bind="nuevaOficina.Ciudad" placeholder="Ciudad" />
 <button class="btn btn-primary" @onclick="CrearOficina">Crear Oficina</button>
+
+
+
+<script>
+    function cerrarModal(modalId) {
+        var modal = document.getElementById(modalId);
+        var modalInstance = bootstrap.Modal.getInstance(modal);
+        modalInstance.hide();
+    }
+</script>
+
 @*
    ******************************    FIN HTML       ******************************
    ******************************  INICIO CODIGO C# ******************************
 *@
 @code {
+    private string nombre = "", direccion = "", ciudad = "";
     private string successMessage = "";
     private string errorMessage = "";
     private int puestoID, oficinaID;
     private Oficinascomerciales oficinaSeleccionada = null;
     private Oficinascomerciales nuevaOficina = new Oficinascomerciales { Nombre = "", Ciudad = "", Direccion = "" };
     private List<Oficinascomerciales> oficinas = new();
-    private List<Puestosatencion> puestos = new();
+    private List<PuestoAtencion> puestos = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,6 +125,7 @@
 
     private async Task MostrarDetallesOficina(ChangeEventArgs e)
     {
+
         if (int.TryParse(e.Value.ToString(), out int id))
         {
             oficinaID = id;
@@ -105,6 +135,9 @@
                 {
                     oficinaSeleccionada = oficina;
                     oficinaSeleccionada.Puestosatencion = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
+                    nombre = oficinaSeleccionada.Nombre;
+                    direccion = oficinaSeleccionada.Direccion;
+                    ciudad = oficinaSeleccionada.Ciudad;
                     break;
                 }
             }
@@ -165,16 +198,37 @@
 
     private async Task AgregarPuesto()
     {
-            oficinaSeleccionada.Puestosatencion.Add(new Puestosatencion());
+        var nuevoPuesto = new PuestoAtencion()
+        {
+            OficinaId = oficinaSeleccionada.OficinaId
+        };
+
+        PuestosService.AddPuestoAsync(nuevoPuesto);
     }
 
-    private async Task<List<Puestosatencion>> GetPuestosAtencion()
+    private async Task<List<PuestoAtencion>> GetPuestosAtencion()
     {
-        List<Puestosatencion> puestos = new();
+        List<PuestoAtencion> puestos = new();
         if(oficinaSeleccionada != null)
         {
             puestos = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
         }
         return puestos;
+    }
+
+    private async Task ModificarOficina()
+    {
+        oficinaSeleccionada.Ciudad = ciudad;
+        oficinaSeleccionada.Nombre = nombre;
+        oficinaSeleccionada.Direccion = direccion;
+        await OficinasService.UpdateOficinaAsync(oficinaSeleccionada);
+        // Llamada para cerrar el modal
+        await JS.InvokeVoidAsync("cerrarModal", "exampleModal");
+    }
+
+    private async Task BorrarPuestoAtencion(int idPuestoClick)
+    {
+        await PuestosService.DeletePuestoAsync(idPuestoClick);
+        oficinaSeleccionada.Puestosatencion = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
     }
 }
