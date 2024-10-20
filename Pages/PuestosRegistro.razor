@@ -3,10 +3,27 @@
 @using TallerGestion.Data
 @using TallerGestion.Data.Persistence
 @inject AtencionesService atencionservice
+@inject OficinasComercialService OficinasService
 
 <h3>Puestos de Registro</h3>
 
 <form id="cedulaForm" @onsubmit="HandleSubmit">
+    <label>Seleccionar oficina:</label>
+    @if (oficinas != null && oficinas.Any())
+    {
+        <select class="form-control" @bind="selectedOficinaId" required>
+            <option value="">Seleccione una Oficina</option>
+            @foreach (var oficina in oficinas)
+            {
+                <option value="@oficina.OficinaId">@oficina.Nombre</option>
+            }
+        </select>
+    }
+    else
+    {
+        <p>Cargando oficinas...</p>
+    }
+
     <div class="form-group">
         <label for="cedula">Cédula:</label>
         <input type="text" class="form-control" id="cedula" @bind="cedula" required placeholder="Ingrese su cédula">
@@ -32,11 +49,7 @@
 
 }
 
-@if (!string.IsNullOrEmpty(@estado))
-{
 
-    <div class="alert alert-info mt-3">@estado</div>
-}
 
 @code {
     private string cedula;
@@ -44,19 +57,19 @@
     private string estado;
     private int selectedTramiteId;
     private List<Tramite> tramitesDisponibles = new List<Tramite>();
-
-    // Simulate fetching office ID (later we'll use a hidden field)
-    private int OficinaID = 1; // Assume we get this value from the form later
+    private List<Oficinascomerciales> oficinas = new();
+    private int selectedOficinaId;
 
     protected override async Task OnInitializedAsync()
     {
         // Cargar los trámites disponibles desde el servicio
         tramitesDisponibles = await atencionservice.ObtenerTramitesAsync();
+        oficinas = await OficinasService.GetAllOficinasAsync();
     }
 
     private async Task HandleSubmit()
     {
-        if (IsValidCedula(cedula) && selectedTramiteId != 0)
+        if (IsValidCedula(cedula) && selectedTramiteId != 0 && selectedOficinaId != 0)
         {
             // Verificar si el cliente ya existe
             var clienteExistente = await atencionservice.ObtenerClientePorCedulaAsync(cedula);
@@ -77,7 +90,7 @@
             // Crear la atención usando el trámite seleccionado
             Atenciones atencion = new Atenciones(
                 cliente.ClienteId,
-                OficinaID,
+                selectedOficinaId,  // Usar la oficina seleccionada
                 null,  // PuestoID is null for now
                 null,  // OperarioID is null for now
                 selectedTramiteId,
@@ -90,19 +103,20 @@
 
             estado = await atencionservice.ObtenerEstadoAtencionPorCedulaAsync(cliente.CedulaIdentidad);
 
-            if (!estado.Equals("En Espera", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(estado) || !estado.Equals("En Espera", StringComparison.OrdinalIgnoreCase))
             {
-                message = "El cliente ya se encuentra en espera o fue atendido";
+                message = "Se ha registrado la atencion correctamente";
                 await atencionservice.CrearNuevaAtencionAsync(atencion);
             }
             else
             {
+
                 message = "Cliente sigue en espera.";
             }
         }
         else
         {
-            message = "Cédula o trámite inválidos. Inténtalo de nuevo.";
+            message = "Cédula, trámite o oficina inválidos. Inténtalo de nuevo.";
         }
     }
 

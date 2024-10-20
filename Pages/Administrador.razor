@@ -11,6 +11,9 @@
 @inject OficinasComercialService OficinasService
 
 @inject PuestosAtencionService PuestosService
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -77,6 +80,7 @@
                 @foreach (var puesto in oficinaSeleccionada?.Puestosatencion)
                 {
                     <li class="mb-1">
+                        <i class="fa-solid fa-chalkboard-user"></i>
                         <button class="btn btn-danger btn-sm"  @onclick="() => BorrarPuestoAtencion(puesto.PuestoId)">Borrar</button>
                     </li>
                 }

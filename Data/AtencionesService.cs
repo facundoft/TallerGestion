@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using TallerGestion.Data.Persistence;
 using System.Linq;
+using System;
 
 namespace TallerGestion.Data
 {
@@ -69,19 +70,25 @@ namespace TallerGestion.Data
 
         public async Task<string> ObtenerEstadoAtencionPorCedulaAsync(string cedula)
         {
+            // Verificar el valor de cedula
+            Console.WriteLine($"Cedula: {cedula}");
+
             string query = @"
-    SELECT a.Estado
-    FROM clientes c
-    LEFT JOIN atenciones a ON c.ClienteID = a.ClienteID
-    WHERE c.CedulaIdentidad = {0}";
+                            SELECT a.Estado
+                            FROM clientes c
+                            LEFT JOIN atenciones a ON c.ClienteID = a.ClienteID
+                            WHERE c.CedulaIdentidad = {0}";
 
             var resultado = await _context.Atenciones
                 .FromSqlRaw(query, cedula)
-                .Select(a => a.Estado)  // Proyectar solo el campo Estado
-                .FirstOrDefaultAsync();  // Obtener el primer resultado o null si no hay
+                .Select(a => a.Estado)
+                .FirstOrDefaultAsync();
 
-            return resultado;  // Devuelve el estado o null si no se encontró
+            //Console.WriteLine($"Resultado: {resultado}");
+            //System.Diagnostics.Debug.WriteLine("\n\n DATOSSS \n\n"+resultado);
+            return resultado;
         }
+
 
 
     }

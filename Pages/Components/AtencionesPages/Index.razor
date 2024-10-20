@@ -1,0 +1,42 @@
+﻿@page "/atenciones"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using TallerGestion.Models
+@using TallerGestion.Data.Persistence
+@implements IAsyncDisposable
+@inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Personas en Espera</h1>
+
+
+
+<QuickGrid Class="table" Items="context.Atenciones">
+    <PropertyColumn Property="atenciones => atenciones.ClienteId" />
+    <PropertyColumn Property="atenciones => atenciones.OficinaId" />
+    <PropertyColumn Property="atenciones => atenciones.PuestoId" />
+    <PropertyColumn Property="atenciones => atenciones.OperarioId" />
+    <PropertyColumn Property="atenciones => atenciones.TramiteId" />
+    <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" />
+    <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" />
+    <PropertyColumn Property="atenciones => atenciones.FechaHoraFinalizacion" />
+    <PropertyColumn Property="atenciones => atenciones.Estado" />
+    <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" />
+
+    <TemplateColumn Context="atenciones">
+        <a href="@($"atenciones/edit?atencionid={atenciones.AtencionId}")">Edit</a> |
+        <a href="@($"atenciones/details?atencionid={atenciones.AtencionId}")">Details</a> |
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private GestionContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}
