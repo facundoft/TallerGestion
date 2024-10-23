@@ -2,8 +2,11 @@
 @using TallerGestion.Models
 @using TallerGestion.Data
 @using TallerGestion.Data.Persistence
+@using Microsoft.AspNetCore.SignalR.Client
 @inject AtencionesService atencionservice
 @inject OficinasComercialService OficinasService
+@inject NavigationManager NavigationManager
+
 
 <h3>Puestos de Registro</h3>
 
@@ -59,10 +62,26 @@
     private List<Tramite> tramitesDisponibles = new List<Tramite>();
     private List<Oficinascomerciales> oficinas = new();
     private int selectedOficinaId;
+    private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-        // Cargar los trámites disponibles desde el servicio
+        // Configurar la conexión SignalR
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/atencionHub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        try
+        {
+            await hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al iniciar SignalR: {ex.Message}");
+        }
+
+        // Cargar los datos iniciales
         tramitesDisponibles = await atencionservice.ObtenerTramitesAsync();
         oficinas = await OficinasService.GetAllOficinasAsync();
     }
@@ -71,52 +90,79 @@
     {
         if (IsValidCedula(cedula) && selectedTramiteId != 0 && selectedOficinaId != 0)
         {
-            // Verificar si el cliente ya existe
             var clienteExistente = await atencionservice.ObtenerClientePorCedulaAsync(cedula);
             Clientes cliente;
 
             if (clienteExistente != null)
             {
-                // Si el cliente ya existe, lo usamos
                 cliente = clienteExistente;
             }
             else
             {
-                // Si el cliente no existe, lo creamos
                 cliente = new Clientes { CedulaIdentidad = cedula };
                 await atencionservice.CrearClienteAsync(cliente);
             }
-
-            // Crear la atención usando el trámite seleccionado
-            Atenciones atencion = new Atenciones(
-                cliente.ClienteId,
-                selectedOficinaId,  // Usar la oficina seleccionada
-                null,  // PuestoID is null for now
-                null,  // OperarioID is null for now
-                selectedTramiteId,
-                DateTime.Now, // FechaHoraLlegada
-                null,  // FechaHoraAtencion
-                null,  // FechaHoraFinalizacion
-                "En Espera",  // Estado
-                0  // SegundaLlamado
-            );
 
             estado = await atencionservice.ObtenerEstadoAtencionPorCedulaAsync(cliente.CedulaIdentidad);
 
             if (string.IsNullOrEmpty(estado) || !estado.Equals("En Espera", StringComparison.OrdinalIgnoreCase))
             {
-                message = "Se ha registrado la atencion correctamente";
+                var atencion = new Atenciones(
+                    cliente.ClienteId,
+                    selectedOficinaId,
+                    null,
+                    null,
+                    selectedTramiteId,
+                    DateTime.Now,
+                    null,
+                    null,
+                    "En Espera",
+                    0
+                );
+
                 await atencionservice.CrearNuevaAtencionAsync(atencion);
+                message = "Se ha registrado la atención correctamente";
+
+                // Asegúrate de que hubConnection está activo antes de enviar
+                if (hubConnection?.State == HubConnectionState.Connected)
+                {
+                    try
+                    {
+                        await hubConnection.SendAsync("NotificarNuevaAtencion", selectedOficinaId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error al notificar nueva atención: {ex.Message}");
+                        message = "Se registró la atención pero hubo un error en la notificación";
+                    }
+                }
+                else
+                {
+                    message = "Se registró la atención pero la conexión SignalR no está activa";
+                    // Intentar reconectar
+                    try
+                    {
+                        await hubConnection?.StartAsync();
+                    }
+                    catch { }
+                }
             }
             else
             {
-
                 message = "Cliente sigue en espera.";
             }
         }
         else
         {
-            message = "Cédula, trámite o oficina inválidos. Inténtalo de nuevo.";
+            message = "Cédula, trámite u oficina inválidos. Inténtalo de nuevo.";
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
         }
     }
 

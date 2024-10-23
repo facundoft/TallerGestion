@@ -5,16 +5,20 @@ using System.Collections.Generic;
 using TallerGestion.Data.Persistence;
 using System.Linq;
 using System;
+using Microsoft.AspNetCore.SignalR;
+using TallerGestion.Hubs;
 
 namespace TallerGestion.Data
 {
     public class AtencionesService
     {
         private readonly GestionContext _context;
+        private readonly IHubContext<AtencionHub> _hubContext;
 
-        public AtencionesService(GestionContext context)
+        public AtencionesService(GestionContext context, IHubContext<AtencionHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         public async Task CrearNuevaAtencionAsync(Atenciones atencion)
@@ -22,6 +26,9 @@ namespace TallerGestion.Data
             // Agregar la nueva atención a la base de datos
             _context.Atenciones.Add(atencion);
             await _context.SaveChangesAsync();
+
+            // Notificar a los clientes conectados sobre la nueva atención
+            await _hubContext.Clients.All.SendAsync("NuevaAtencion", atencion.OficinaId);
         }
 
 

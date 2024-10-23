@@ -1,42 +1,402 @@
 ﻿@page "/atenciones"
+@using TallerGestion.Pages.Components
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using TallerGestion.Models
 @using TallerGestion.Data.Persistence
+@using Microsoft.AspNetCore.SignalR.Client
+@using TallerGestion.Hubs
 @implements IAsyncDisposable
 @inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
 <PageTitle>Index</PageTitle>
 
-<h1>Personas en Espera</h1>
+@if (mostrarFormulario)
+{
+    <div class="container mt-4">
+        <h1 class="mb-4">Login de Puesto</h1>
+        <EditForm Model="@this" OnValidSubmit="OcultarFormulario">
+            <div class="form-group mb-3">
+                <label class="form-label">Seleccionar Oficina</label>
+                <select class="form-select" @onchange="@(e => OnOficinaChanged(e))">
+                    <option value="">-- Selecciona una Oficina --</option>
+                    @foreach (var oficina in oficinas)
+                    {
+                        <option value="@oficina.OficinaId">@oficina.Nombre</option>
+                    }
+                </select>
+            </div>
 
+            <div class="form-group mb-3">
+                <label class="form-label">Seleccionar Operario</label>
+                <select class="form-select" @bind="selectedOperarioId" disabled="@(!operariosDisponibles)">
+                    <option value="">-- Selecciona un Operario --</option>
+                    @foreach (var operario in operarios)
+                    {
+                        <option value="@operario.OperarioId">@operario.Nombre @operario.Apellido</option>
+                    }
+                </select>
+            </div>
 
+            <div class="form-group mb-3">
+                <label class="form-label">Seleccionar Puesto de Atención</label>
+                <select class="form-select" @bind="selectedPuestoId" disabled="@(!puestosDisponibles)">
+                    <option value="">-- Selecciona un Puesto --</option>
+                    @foreach (var puesto in puestos)
+                    {
+                        <option value="@puesto.PuestoId">Puesto @puesto.NumeroPuesto</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" disabled="@(!operariosDisponibles || !puestosDisponibles)">
+                Iniciar Sesión
+            </button>
+        </EditForm>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Personas en Espera</h1>
+            <button class="btn btn-secondary" @onclick="VolverAlFormulario">Volver</button>
+        </div>
 
-<QuickGrid Class="table" Items="context.Atenciones">
-    <PropertyColumn Property="atenciones => atenciones.ClienteId" />
-    <PropertyColumn Property="atenciones => atenciones.OficinaId" />
-    <PropertyColumn Property="atenciones => atenciones.PuestoId" />
-    <PropertyColumn Property="atenciones => atenciones.OperarioId" />
-    <PropertyColumn Property="atenciones => atenciones.TramiteId" />
-    <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" />
-    <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" />
-    <PropertyColumn Property="atenciones => atenciones.FechaHoraFinalizacion" />
-    <PropertyColumn Property="atenciones => atenciones.Estado" />
-    <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" />
+        @if (atencionesFiltradas != null)
+        {
+            <div class="table-responsive">
+                <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
+                    <PropertyColumn Property="atenciones => atenciones.ClienteId" Title="Cliente" />
+                    <PropertyColumn Property="atenciones => atenciones.OficinaId" Title="Oficina" />
+                    <PropertyColumn Property="atenciones => atenciones.PuestoId" Title="Puesto" />
+                    <PropertyColumn Property="atenciones => atenciones.OperarioId" Title="Operario" />
+                    <PropertyColumn Property="atenciones => atenciones.TramiteId" Title="Trámite" />
+                    <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" Title="Hora Llegada" />
+                    <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" Title="Hora Atención" />
+                    <PropertyColumn Property="atenciones => atenciones.FechaHoraFinalizacion" Title="Hora Finalización" />
+                    <PropertyColumn Property="atenciones => atenciones.Estado" Title="Estado" />
+                    <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
 
-    <TemplateColumn Context="atenciones">
-        <a href="@($"atenciones/edit?atencionid={atenciones.AtencionId}")">Edit</a> |
-        <a href="@($"atenciones/details?atencionid={atenciones.AtencionId}")">Details</a> |
-    </TemplateColumn>
-</QuickGrid>
+                    <TemplateColumn Context="atenciones">
+                        @if (atenciones.Estado != "En Progreso")
+                        {
+                            <button class="btn btn-primary btn-sm" @onclick="() => IniciarLlamado(atenciones)">
+                                Atender
+                            </button>
+                        }
+                    </TemplateColumn>
+                </QuickGrid>
+            </div>
+        }
+    </div>
+}
+
+<!-- Modal de Bootstrap -->
+<div class="modal fade @(showModal ? "show" : "")" id="atencionModal" tabindex="-1" role="dialog"
+     style="display: @(showModal ? "block" : "none")" aria-hidden="@(!showModal)">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    @if (!atencionConfirmada)
+                    {
+                        <span>Llamado @llamadoCount - Tiempo restante: @tiempoRestante segundos</span>
+                    }
+                    else
+                    {
+                        <span>Atención en Progreso</span>
+                    }
+                </h5>
+                @if (!countdownRunning || atencionConfirmada)
+                {
+                    <button type="button" class="close" @onclick="CerrarModal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                }
+            </div>
+            <div class="modal-body">
+                @if (!atencionConfirmada)
+                {
+                    @if (countdownRunning)
+                    {
+                        <div class="text-center">
+                            <h3>@tiempoRestante</h3>
+                            <button class="btn btn-success" @onclick="ConfirmarAtencion">
+                                Confirmar Inicio de Atención
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center">
+                            <h3>Atención marcada como No Asistió</h3>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center">
+                        <h3>Atención en Progreso</h3>
+                        <button class="btn btn-danger" @onclick="FinalizarAtencion">
+                            Finalizar Atención
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (showModal)
+{
+    <div class="modal-backdrop fade show"></div>
+}
 
 @code {
     private GestionContext context = default!;
+    private List<Oficinascomerciales> oficinas = new();
+    private List<Operarios> operarios = new();
+    private List<PuestoAtencion> puestos = new();
+    private int? selectedOficinaId;
+    private int? selectedOperarioId;
+    private int? selectedPuestoId;
+    private bool mostrarFormulario = true;
+    private bool operariosDisponibles = false;
+    private bool puestosDisponibles = false;
+    private IQueryable<Atenciones>? atencionesFiltradas;
 
-    protected override void OnInitialized()
+    // Modal and countdown states
+    private bool showModal = false;
+    private bool countdownRunning = false;
+    private bool atencionConfirmada = false;
+    private Atenciones? currentAtencion;
+    private int llamadoCount = 1;
+    private int tiempoRestante = 10;
+    private System.Threading.Timer? timer;
+    private HubConnection? hubConnection;
+    // ... resto de las variables existentes ...
+
+    protected override async Task OnInitializedAsync()
     {
         context = DbFactory.CreateDbContext();
+        oficinas = await context.Oficinascomerciales.ToListAsync();
+        await ConfigureSignalR();
     }
 
-    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+    private async Task ConfigureSignalR()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/atencionHub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<int>("NuevaAtencion", async (oficinaId) =>
+        {
+            // Solo actualizar si es la oficina seleccionada
+            if (selectedOficinaId.HasValue && oficinaId == selectedOficinaId.Value)
+            {
+                await ActualizarAtencionesFiltradas();
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        hubConnection.On<int>("AtencionActualizada", async (oficinaId) =>
+        {
+            // Solo actualizar si es la oficina seleccionada
+            if (selectedOficinaId.HasValue && oficinaId == selectedOficinaId.Value)
+            {
+                await ActualizarAtencionesFiltradas();
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        try
+        {
+            await hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+        await context.DisposeAsync();
+        timer?.Dispose();
+    }
+
+    private async Task OnOficinaChanged(ChangeEventArgs e)
+    {
+        selectedOficinaId = int.TryParse(e.Value?.ToString(), out var id) ? id : (int?)null;
+        await CargarOperariosYPuestos();
+        await ActualizarAtencionesFiltradas();
+    }
+
+    private async Task ActualizarAtencionesFiltradas()
+    {
+        if (selectedOficinaId.HasValue)
+        {
+            using var newContext = DbFactory.CreateDbContext();
+            var atenciones = await newContext.Atenciones
+                .Where(a => a.OficinaId == selectedOficinaId.Value)
+                .Where(a => a.Estado != "Finalizada" && a.Estado != "NA")
+                .OrderBy(a => a.FechaHoraLlegada)
+                .ToListAsync();
+
+            atencionesFiltradas = atenciones.AsQueryable();
+            await InvokeAsync(StateHasChanged); // Asegura que la UI se actualice
+        }
+        else
+        {
+            atencionesFiltradas = null;
+        }
+    }
+
+    private async Task CargarOperariosYPuestos()
+    {
+        if (selectedOficinaId.HasValue)
+        {
+            operarios = await context.Operarios.Where(o => o.OficinaId == selectedOficinaId.Value).ToListAsync();
+            puestos = await context.Puestosatencion.Where(p => p.OficinaId == selectedOficinaId.Value).ToListAsync();
+            operariosDisponibles = operarios.Count > 0;
+            puestosDisponibles = puestos.Count > 0;
+        }
+    }
+
+    private async Task OcultarFormulario()
+    {
+        mostrarFormulario = false;
+    }
+
+    private async Task IniciarLlamado(Atenciones atencion)
+    {
+        if (selectedOperarioId == null || selectedPuestoId == null)
+        {
+            return;
+        }
+
+        currentAtencion = atencion;
+        currentAtencion.PuestoId = selectedPuestoId.Value;
+        currentAtencion.OperarioId = selectedOperarioId.Value;
+        currentAtencion.Estado = "Llamando";
+        currentAtencion.SegundaLlamado = 1;
+
+        showModal = true;
+        countdownRunning = true;
+        atencionConfirmada = false;
+        tiempoRestante = 10;
+
+        context.Atenciones.Update(currentAtencion);
+        await context.SaveChangesAsync();
+
+        // Iniciar el temporizador
+        timer?.Dispose();
+        timer = new System.Threading.Timer(
+            async _ => await TimerCallback(),
+            null,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1)
+        );
+    }
+
+    private async Task TimerCallback()
+    {
+        await InvokeAsync(async () =>
+        {
+            if (countdownRunning && tiempoRestante > 0)
+            {
+                tiempoRestante--;
+                if (tiempoRestante == 0)
+                {
+                    await HandleTimeUp();
+                }
+                StateHasChanged();
+            }
+        });
+    }
+
+    private async Task HandleTimeUp()
+    {
+        if (!atencionConfirmada)
+        {
+            if (llamadoCount == 1)
+            {
+                // Primer llamado terminó, iniciar segundo llamado
+                llamadoCount = 2;
+                tiempoRestante = 10;
+                if (currentAtencion != null)
+                {
+                    currentAtencion.SegundaLlamado = 2;
+                    await context.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                // Segundo llamado terminó sin confirmación
+                if (currentAtencion != null)
+                {
+                    currentAtencion.Estado = "NA";
+                    await context.SaveChangesAsync();
+                }
+                countdownRunning = false;
+                timer?.Dispose();
+            }
+        }
+    }
+
+    private async Task ConfirmarAtencion()
+    {
+        if (currentAtencion != null)
+        {
+            timer?.Dispose();
+            atencionConfirmada = true;
+            countdownRunning = false;
+            currentAtencion.FechaHoraAtencion = DateTime.Now;
+            currentAtencion.Estado = "En Progreso";
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private async Task FinalizarAtencion()
+    {
+        if (currentAtencion != null)
+        {
+            currentAtencion.FechaHoraFinalizacion = DateTime.Now;
+            currentAtencion.Estado = "Finalizada";
+            await context.SaveChangesAsync();
+            CerrarModal();
+        }
+    }
+
+    private void CerrarModal()
+    {
+        showModal = false;
+        ResetearEstados();
+    }
+
+    private void ResetearEstados()
+    {
+        timer?.Dispose();
+        currentAtencion = null;
+        atencionConfirmada = false;
+        countdownRunning = false;
+        llamadoCount = 1;
+        tiempoRestante = 10;
+    }
+
+    private void VolverAlFormulario()
+    {
+        mostrarFormulario = true;
+        operariosDisponibles = false;
+        puestosDisponibles = false;
+        selectedOperarioId = null;
+        selectedPuestoId = null;
+    }
 }

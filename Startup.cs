@@ -12,6 +12,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TallerGestion.Data;
 using TallerGestion.Data.Persistence;
+using TallerGestion.Hubs;
 
 namespace TallerGestion
 {
@@ -29,6 +30,7 @@ namespace TallerGestion
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            services.AddSignalR();
             services.AddScoped<AtencionesService>();
             services.AddScoped<OficinasComercialService>();
             services.AddScoped<PuestosAtencionService>();
@@ -72,6 +74,7 @@ namespace TallerGestion
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapBlazorHub();
+                endpoints.MapHub<AtencionHub>("/atencionHub");
                 endpoints.MapFallbackToPage("/_Host");
             });
         }
