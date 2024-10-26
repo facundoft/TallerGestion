@@ -1,4 +1,7 @@
-﻿<div class="top-row pl-4 navbar navbar-dark">
+﻿<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+
+<div class="top-row pl-4 navbar navbar-dark">
     <a class="navbar-brand" href="">TallerGestion</a>
     <button class="navbar-toggler" @onclick="ToggleNavMenu">
         <span class="navbar-toggler-icon"></span>
@@ -14,22 +17,22 @@
         </li>
         <li class="nav-item px-3">
             <NavLink class="nav-link" href="PuestosRegistro">
-                <span class="oi oi-account-login" aria-hidden="true"></span> Puestos de registro
+                <span class="fa-solid fa-right-to-bracket" aria-hidden="true"></span> Registro Atencion
             </NavLink>
         </li>
         <li class="nav-item px-3">
-            <NavLink class="nav-link" href="monitores">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Monitor de llamados
-            </NavLink>
-        </li>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="atencion">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Puestos de Atencion
+            <NavLink class="nav-link" href="atenciones">
+                <span class="fa-solid fa-chalkboard-user" aria-hidden="true"></span> Monitor Operario
             </NavLink>
         </li>
         <li class="nav-item px-3">
             <NavLink class="nav-link" href="admin">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Administrador
+                <span class="fa-solid fa-user-tie" aria-hidden="true"></span> Monitor Administrador
+            </NavLink>
+        </li>
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="monitor">
+                <span class="fa-solid fa-right-to-bracket" aria-hidden="true"></span> Monitor Atenciones
             </NavLink>
         </li>
     </ul>

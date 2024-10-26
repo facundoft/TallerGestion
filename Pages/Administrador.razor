@@ -1,62 +1,238 @@
 ﻿@page "/admin"
+@using TallerGestion.Models
+@using TallerGestion.Data
+@using TallerGestion.Data.Persistence
+@using Microsoft.EntityFrameworkCore;
+@using MySql.Data.MySqlClient;
+﻿@using TallerGestion.Models
+@using TallerGestion.Data.Persistence
+
+@inject IJSRuntime JS
 @inject OficinasComercialService OficinasService
+
 @inject PuestosAtencionService PuestosService
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                
+                <input class="form-control mb-1 mt-1" @bind="nombre" placeholder="Nombre" />
+                <input class="form-control mb-1" @bind="direccion" placeholder="Dirección" />
+                <input class="form-control mb-1" @bind="ciudad" placeholder="Ciudad" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" @onclick="ModificarOficina" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <h3>Administrar Oficinas y Puestos de Atención</h3>
 
-<h4>Alta de Oficina</h4>
-<input @bind="nuevaOficina.Nombre" placeholder="Nombre" />
-<input @bind="nuevaOficina.Direccion" placeholder="Dirección" />
-<input @bind="nuevaOficina.Ciudad" placeholder="Ciudad" />
-<button @onclick="CrearOficina">Crear Oficina</button>
+@if (errorMessage != String.Empty)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>@errorMessage</strong>
+        <button type="button" class="close" @onclick=LimpiarMensajes data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+@if (successMessage != String.Empty)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>@successMessage</strong>
+        <button @onclick=LimpiarMensajes type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
 
-<h4>Borrar Oficina</h4>
-<select @bind="oficinaID">
+
+<h4>Info oficina</h4>
+<select class="form-control" @onchange="MostrarDetallesOficina">
     <option value="">Seleccione una Oficina</option>
     @foreach (var oficina in oficinas)
     {
         <option value="@oficina.OficinaId">@oficina.Nombre</option>
     }
 </select>
-<button @onclick="BorrarOficina">Borrar Oficina</button>
+<ul>
 
+    <li>ID: @oficinaSeleccionada?.OficinaId</li>
+    <li>Nombre:  @oficinaSeleccionada?.Nombre</li>
+    <li>Dirección:  @oficinaSeleccionada?.Direccion</li>
+    <li>Ciudad: @oficinaSeleccionada?.Ciudad </li>
+    <li>
+        Puestos de atencion:
+        <ol>
+            @if (oficinaSeleccionada != null)
+            {
+
+                @foreach (var puesto in oficinaSeleccionada?.Puestosatencion)
+                {
+                    <li class="mb-1">
+                        <i class="fa-solid fa-chalkboard-user"></i>
+                        <button class="btn btn-danger btn-sm"  @onclick="() => BorrarPuestoAtencion(puesto.PuestoId)">Borrar</button>
+                    </li>
+                }
+                <button class="btn btn-primary" @onclick=AgregarPuesto >Agregar Puesto</button>
+            }
+        </ol>
+    </li>
+</ul>
+<button disabled=@(oficinaSeleccionada==null) type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#exampleModal">Modificar</button>
+<button disabled=@(oficinaSeleccionada==null) class="btn btn-danger" @onclick="BorrarOficina">Borrar Oficina</button>
+<hr />
+<h4>Alta de Oficina</h4>
+<input @bind="nuevaOficina.Nombre" placeholder="Nombre" />
+<input @bind="nuevaOficina.Direccion" placeholder="Dirección" />
+<input @bind="nuevaOficina.Ciudad" placeholder="Ciudad" />
+<button class="btn btn-primary" @onclick="CrearOficina">Crear Oficina</button>
+
+
+
+<script>
+    function cerrarModal(modalId) {
+        var modal = document.getElementById(modalId);
+        var modalInstance = bootstrap.Modal.getInstance(modal);
+        modalInstance.hide();
+    }
+</script>
+
+@*
+   ******************************    FIN HTML       ******************************
+   ******************************  INICIO CODIGO C# ******************************
+*@
 @code {
-    private Oficinascomerciales nuevaOficina = new Oficinascomerciales();
-    private Puestosatencion nuevoPuesto = new Puestosatencion();
-    private int oficinaID, puestoID;
-
+    private string nombre = "", direccion = "", ciudad = "";
+    private string successMessage = "";
+    private string errorMessage = "";
+    private int puestoID, oficinaID;
+    private Oficinascomerciales oficinaSeleccionada = null;
+    private Oficinascomerciales nuevaOficina = new Oficinascomerciales { Nombre = "", Ciudad = "", Direccion = "" };
     private List<Oficinascomerciales> oficinas = new();
-    private List<Puestosatencion> puestos = new();
+    private List<PuestoAtencion> puestos = new();
 
     protected override async Task OnInitializedAsync()
     {
         oficinas = await OficinasService.GetAllOficinasAsync();
-        puestos = await PuestosService.GetAllPuestosAsync();
     }
 
+    private async Task MostrarDetallesOficina(ChangeEventArgs e)
+    {
+
+        if (int.TryParse(e.Value.ToString(), out int id))
+        {
+            oficinaID = id;
+            foreach (var oficina in oficinas)
+            {
+                if (oficina.OficinaId == id)
+                {
+                    oficinaSeleccionada = oficina;
+                    oficinaSeleccionada.Puestosatencion = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
+                    nombre = oficinaSeleccionada.Nombre;
+                    direccion = oficinaSeleccionada.Direccion;
+                    ciudad = oficinaSeleccionada.Ciudad;
+                    break;
+                }
+            }
+        }
+    }
     private async Task CrearOficina()
     {
-        await OficinasService.AddOficinaAsync(nuevaOficina);
-        nuevaOficina = new Oficinascomerciales(); // Resetear el formulario
-        oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
-    }
+        LimpiarMensajes();
+        bool emptyFields = nuevaOficina.Nombre == String.Empty || nuevaOficina.Direccion == String.Empty || nuevaOficina.Ciudad == String.Empty;
+        if (emptyFields || (nuevaOficina.Nombre.Length < 3 || nuevaOficina.Direccion.Length < 3 || nuevaOficina.Ciudad.Length < 3))
+        {
+            errorMessage = "Campos inválidos";
 
-    private async Task CrearPuesto()
-    {
-        await PuestosService.AddPuestoAsync(nuevoPuesto);
-        nuevoPuesto = new Puestosatencion(); // Resetear el formulario
-        puestos = await PuestosService.GetAllPuestosAsync(); // Actualizar la lista de puestos
+            return;
+        }
+        await OficinasService.AddOficinaAsync(nuevaOficina);
+        nuevaOficina = new Oficinascomerciales { Nombre = "", Ciudad = "", Direccion = "" }; // Resetear el formulario
+        successMessage = "Oficina creada satisfactoriamente";
+        oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+        TimeoutMensajes();
     }
 
     private async Task BorrarOficina()
     {
-        await OficinasService.DeleteOficinaAsync(oficinaID);
-        oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+        LimpiarMensajes();
+        int deleteOficinaID = oficinaSeleccionada.OficinaId;
+        try
+        {
+            var nombre = oficinaSeleccionada.Nombre;
+            await OficinasService.DeleteOficinaAsync(deleteOficinaID);
+            oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+            oficinaSeleccionada = null;
+            successMessage = "Oficina borrada correctamente: " + nombre;
+            TimeoutMensajes();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Message.Contains("Cannot delete or update a parent row"))
+        {
+            errorMessage = "No se puede eliminar la oficina. Primero debe eliminar los operarios asociados.";
+            TimeoutMensajes();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
+    private void LimpiarMensajes()
+    {
+        errorMessage = "";
+        successMessage = "";
+        StateHasChanged();
+    }
+    private async Task TimeoutMensajes()
+    {
+        await Task.Delay(5000);
+        LimpiarMensajes();
+
     }
 
-    private async Task BorrarPuesto()
+    private async Task AgregarPuesto()
     {
-        await PuestosService.DeletePuestoAsync(puestoID);
-        puestos = await PuestosService.GetAllPuestosAsync(); // Actualizar la lista de puestos
+        var nuevoPuesto = new PuestoAtencion()
+        {
+            OficinaId = oficinaSeleccionada.OficinaId
+        };
+
+        PuestosService.AddPuestoAsync(nuevoPuesto);
+    }
+
+    private async Task<List<PuestoAtencion>> GetPuestosAtencion()
+    {
+        List<PuestoAtencion> puestos = new();
+        if(oficinaSeleccionada != null)
+        {
+            puestos = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
+        }
+        return puestos;
+    }
+
+    private async Task ModificarOficina()
+    {
+        oficinaSeleccionada.Ciudad = ciudad;
+        oficinaSeleccionada.Nombre = nombre;
+        oficinaSeleccionada.Direccion = direccion;
+        await OficinasService.UpdateOficinaAsync(oficinaSeleccionada);
+        // Llamada para cerrar el modal
+        await JS.InvokeVoidAsync("cerrarModal", "exampleModal");
+    }
+
+    private async Task BorrarPuestoAtencion(int idPuestoClick)
+    {
+        await PuestosService.DeletePuestoAsync(idPuestoClick);
+        oficinaSeleccionada.Puestosatencion = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
     }
 }

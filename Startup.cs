@@ -10,8 +10,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TallerGestion.Data;
 using TallerGestion.Data.Persistence;
-using TallerGestion.Models;
+using TallerGestion.Hubs;
 
 namespace TallerGestion
 {
@@ -29,9 +30,14 @@ namespace TallerGestion
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            services.AddSignalR();
             services.AddScoped<AtencionesService>();
-            services.AddDbContext<GestionContext>(options =>
-                      options.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo"));
+            services.AddScoped<OficinasComercialService>();
+            services.AddScoped<PuestosAtencionService>();
+            services.AddQuickGridEntityFrameworkAdapter();
+            services.AddDbContextFactory<GestionContext>(options =>
+        options.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo"));
+
             //options.UseSqlServer("Server=localhost;Database=MiBaseDeDatos;Integrated Security=True;");
 
 
@@ -68,6 +74,7 @@ namespace TallerGestion
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapBlazorHub();
+                endpoints.MapHub<AtencionHub>("/atencionHub");
                 endpoints.MapFallbackToPage("/_Host");
             });
         }

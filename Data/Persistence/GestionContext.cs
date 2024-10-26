@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using TallerGestion.Models;
 
-namespace TallerGestion.Models;
+namespace TallerGestion.Data.Persistence;
 
 public partial class GestionContext : DbContext
 {
@@ -21,7 +22,7 @@ public partial class GestionContext : DbContext
 
     public virtual DbSet<Operarios> Operarios { get; set; }
 
-    public virtual DbSet<Puestosatencion> Puestosatencion { get; set; }
+    public virtual DbSet<PuestoAtencion> Puestosatencion { get; set; }
 
     public virtual DbSet<Tramite> Tramite { get; set; }
 
@@ -75,7 +76,7 @@ public partial class GestionContext : DbContext
                 .HasConstraintName("operarios_ibfk_1");
         });
 
-        modelBuilder.Entity<Puestosatencion>(entity =>
+        modelBuilder.Entity<PuestoAtencion>(entity =>
         {
             entity.HasKey(e => e.PuestoId).HasName("PRIMARY");
 
