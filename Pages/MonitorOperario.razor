@@ -71,7 +71,7 @@ else
                     <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
 
                     <TemplateColumn Context="atenciones">
-                        @if (atenciones.Estado != "En Progreso")
+                        @if (atenciones.Estado == "En Espera")
                         {
                             <button class="btn btn-primary btn-sm" @onclick="() => IniciarLlamado(atenciones)">
                                 Atender
