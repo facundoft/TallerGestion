@@ -11,19 +11,16 @@
 @inject OficinasComercialService OficinasService
 
 @inject PuestosAtencionService PuestosService
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Modificar oficina</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                
+
                 <input class="form-control mb-1 mt-1" @bind="nombre" placeholder="Nombre" />
                 <input class="form-control mb-1" @bind="direccion" placeholder="Dirección" />
                 <input class="form-control mb-1" @bind="ciudad" placeholder="Ciudad" />
@@ -81,22 +78,25 @@
                 {
                     <li class="mb-1">
                         <i class="fa-solid fa-chalkboard-user"></i>
-                        <button class="btn btn-danger btn-sm"  @onclick="() => BorrarPuestoAtencion(puesto.PuestoId)">Borrar</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => BorrarPuestoAtencion(puesto.PuestoId)">Borrar</button>
                     </li>
                 }
-                <button class="btn btn-primary" @onclick=AgregarPuesto >Agregar Puesto</button>
+                <button class="btn btn-primary" @onclick=AgregarPuesto>Agregar Puesto</button>
             }
         </ol>
     </li>
 </ul>
-<button disabled=@(oficinaSeleccionada==null) type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#exampleModal">Modificar</button>
-<button disabled=@(oficinaSeleccionada==null) class="btn btn-danger" @onclick="BorrarOficina">Borrar Oficina</button>
+<div class="btn-group">
+
+    <button disabled=@(oficinaSeleccionada==null) type="button" class="btn btn-info m-1" data-bs-toggle="modal" data-bs-target="#exampleModal">Modificar</button>
+    <button disabled=@(oficinaSeleccionada==null) class="btn btn-danger m-1" @onclick="BorrarOficina">Borrar Oficina</button>
+</div>
 <hr />
 <h4>Alta de Oficina</h4>
-<input @bind="nuevaOficina.Nombre" placeholder="Nombre" />
-<input @bind="nuevaOficina.Direccion" placeholder="Dirección" />
-<input @bind="nuevaOficina.Ciudad" placeholder="Ciudad" />
-<button class="btn btn-primary" @onclick="CrearOficina">Crear Oficina</button>
+<input class="form-control mt-1" @bind="nuevaOficina.Nombre" placeholder="Nombre" />
+<input class="form-control mt-1" @bind="nuevaOficina.Direccion" placeholder="Dirección" />
+<input class="form-control mt-1" @bind="nuevaOficina.Ciudad" placeholder="Ciudad" />
+<button class="btn btn-primary mt-1" @onclick="CrearOficina">Crear Oficina</button>
 
 
 
@@ -203,9 +203,9 @@
     private async Task AgregarPuesto()
     {
         var nuevoPuesto = new PuestoAtencion()
-        {
-            OficinaId = oficinaSeleccionada.OficinaId
-        };
+            {
+                OficinaId = oficinaSeleccionada.OficinaId
+            };
 
         PuestosService.AddPuestoAsync(nuevoPuesto);
     }
@@ -213,7 +213,7 @@
     private async Task<List<PuestoAtencion>> GetPuestosAtencion()
     {
         List<PuestoAtencion> puestos = new();
-        if(oficinaSeleccionada != null)
+        if (oficinaSeleccionada != null)
         {
             puestos = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
         }

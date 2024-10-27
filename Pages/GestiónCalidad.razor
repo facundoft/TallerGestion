@@ -1,0 +1,105 @@
+﻿@page "/gestion"
+@using TallerGestion.Pages.Components
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using TallerGestion.Models
+@using TallerGestion.Data.Persistence
+@using Microsoft.AspNetCore.SignalR.Client
+@using TallerGestion.Hubs
+@inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject GestionCalidadService GestionCalidadService
+@inject AtencionesService AtencionesService
+
+<h3>Obtener cantidad de clientes en un tiempo</h3>
+<select @bind="Modalidad">
+    <option value="TIEMPOREAL">Tiempo real</option>
+    <option value="PERIODO">Por periodo</option>
+</select>
+@if (Modalidad == "TIEMPOREAL")
+{
+    <p>Cantidad de atenciones actuales: <span>@CountAtenciones</span></p>
+    <p>Cantidad de clientes en espera: <span>@CountClientesEspera</span></p>
+}
+else if (Modalidad == "PERIODO")
+{
+    <label for="filtro-estado">Filtrar por estado</label>
+    <select class="form-control" id="filtro-estado" name="filtro-estado" @bind="FiltroEstado">
+        <option value="todos">Todos</option>
+        <option value="En Espera">En espera</option>
+        <option value="En Progreso">En progreso</option>
+        <option value="Finalizado">Finalizado</option>
+    </select>
+    <form class="row g-3">
+
+        <div class="col-auto">
+            <label for="inputDateStart" class="visually-hidden">Fecha Inicio</label>
+            <input type="date" @bind="DateStart" class="form-control" id="inputDateStart">
+        </div>
+        <div class="col-auto">
+            <label for="inputDateFinish" class="visually-hidden">Fecha fin</label>
+            <input type="date" @bind="DateFinish" class="form-control" id="inputDateFinish">
+        </div>
+    </form>
+    <div class="col-auto">
+        <button type="button" @onclick="ActualizarAtencionesFiltradas" class="btn btn-primary">Buscar</button>
+    </div>
+
+    <h4>Cantidad: @atencionesFiltradas.Count()</h4>
+    <div class="table-responsive">
+        <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
+            <PropertyColumn Property="atenciones => atenciones.ClienteId" Title="Cliente" />
+            <PropertyColumn Property="atenciones => atenciones.OficinaId" Title="Oficina" />
+            <PropertyColumn Property="atenciones => atenciones.PuestoId" Title="Puesto" />
+            <PropertyColumn Property="atenciones => atenciones.OperarioId" Title="Operario" />
+            <PropertyColumn Property="atenciones => atenciones.Tramite.DescripcionTramite" Title="Trámite" />
+            <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" Title="Hora Llegada" />
+            <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" Title="Hora Atención" />
+            <PropertyColumn Property="atenciones => atenciones.FechaHoraFinalizacion" Title="Hora Finalización" />
+            <PropertyColumn Property="atenciones => atenciones.Estado" Title="Estado" />
+            <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
+        </QuickGrid>
+    </div>
+}
+
+
+@code {
+    private Dictionary<int, string> TramiteMapper = new Dictionary<int, string> { };
+    string FiltroEstado = "todos";
+    DateTime DateStart = DateTime.MinValue;
+    DateTime DateFinish = DateTime.MaxValue;
+
+    string Modalidad = "TIEMPOREAL";
+    int CountAtenciones = 0;
+    int CountClientesEspera = 0;
+
+    private GestionContext context = default!;
+    private IQueryable<Atenciones>? atencionesFiltradas;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<int> idTramites = [];
+        context = DbFactory.CreateDbContext();
+        CountAtenciones = await context.Atenciones.Where(a => a.Estado == "En Progreso").CountAsync();
+        CountClientesEspera = await context.Atenciones.Where(a => a.Estado == "En Espera").CountAsync();
+        await ActualizarAtencionesFiltradas();
+    }
+
+
+    private async Task ActualizarAtencionesFiltradas()
+    {
+        try
+        {
+
+            atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado);
+        }
+        catch (Exception e)
+        {
+        }
+        await InvokeAsync(StateHasChanged); // Asegura que la UI se actualice
+    }
+}
+

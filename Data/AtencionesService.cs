@@ -7,6 +7,7 @@ using System.Linq;
 using System;
 using Microsoft.AspNetCore.SignalR;
 using TallerGestion.Hubs;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace TallerGestion.Data
 {
@@ -97,6 +98,25 @@ namespace TallerGestion.Data
         }
 
 
+        public async Task<IQueryable<Atenciones>> GetAtencionesAsyncFilter(DateTime DateStart, DateTime DateFinish, string FiltroEstado = "todos")
+        {
+            if (FiltroEstado == "todos")
+            {
+                return _context.Atenciones
+                      .Where(a => a.FechaHoraLlegada > DateStart)
+                      .Where(a => a.FechaHoraLlegada < DateFinish)
+                      .AsQueryable();
+
+            }
+            else
+            {
+                return _context.Atenciones
+                     .Where(a => a.FechaHoraLlegada > DateStart)
+                     .Where(a => a.FechaHoraLlegada < DateFinish)
+                     .Where(a => a.Estado == FiltroEstado).AsQueryable();
+            }
+
+        }
 
     }
 }

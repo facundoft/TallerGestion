@@ -1,15 +1,15 @@
-﻿@inherits LayoutComponentBase
-
-<div class="sidebar">
-    <NavMenu />
-</div>
-
-<div class="main">
-    <div class="top-row px-4">
-        <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+﻿@inject NavigationManager NavigationManager
+@inherits LayoutComponentBase
+@if (!NavigationManager.Uri.ToLower().Contains("/monitor"))
+{
+    <div class="sidebar">
+        <NavMenu />
     </div>
-
-    <div class="content px-4">
+    <div class="pagecontent">
         @Body
     </div>
-</div>
+}
+else
+{
+    @Body
+}

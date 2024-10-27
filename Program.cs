@@ -24,7 +24,7 @@ namespace TallerGestion
                 {
                     // Aquí agregamos el DbContextFactory
                     services.AddDbContextFactory<GestionContext>(options =>
-                        options.UseMySQL(hostContext.Configuration.GetConnectionString("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo")));
+                        options.UseMySQL(hostContext.Configuration.GetConnectionString("server=127.0.0.1;port=3306;database=gestion;user=root;password=1234")));
                 });
     }
 }

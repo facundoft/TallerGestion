@@ -24,6 +24,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -42,6 +43,10 @@
 
   <ItemGroup>
     <None Include="Pages\Components\AtencionesPages\CountDownTimer.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\css\NewFolder1\" />
   </ItemGroup>
 
 </Project>
