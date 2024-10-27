@@ -6,9 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using TallerGestion.Data.Persistence;
 using Microsoft.EntityFrameworkCore.Internal;
 using System.Linq;
+
 public class OficinasComercialService
 {
     private readonly GestionContext _context;
+    public static Oficinascomerciales OficinaActual { get; set; }
     public OficinasComercialService(GestionContext context)
     {
         _context = context;
@@ -21,19 +23,29 @@ public class OficinasComercialService
 
     public async Task AddOficinaAsync(Oficinascomerciales oficina)
     {
-        _context.ChangeTracker.Clear();
         _context.Oficinascomerciales.Add(oficina);
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteOficinaAsync(int id)
+    public async Task<bool> DeleteOficinaAsync(int id)
     {
         var oficina = await _context.Oficinascomerciales.FindAsync(id);
         if (oficina != null)
         {
-            _context.Oficinascomerciales.Remove(oficina);
-            await _context.SaveChangesAsync();
+            try
+            {
+
+                _context.Oficinascomerciales.Remove(oficina);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                _context.ChangeTracker.Clear();
+            }
         }
+        return false;
     }
 
     public async Task<Oficinascomerciales> GetOficinaByIdAsync(int id)

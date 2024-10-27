@@ -1,15 +1,73 @@
 ﻿@inject NavigationManager NavigationManager
 @inherits LayoutComponentBase
-@if (!NavigationManager.Uri.ToLower().Contains("/monitor"))
+@inject OficinasComercialService OficinasComercialService
+
+@if (OficinasComercialService.OficinaActual != null || NavigationManager.Uri.ToLower().Contains("/admin"))
 {
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-    <div class="pagecontent">
+
+    @if (NavigationManager.Uri.ToLower().Contains("/monitor"))
+    {
         @Body
-    </div>
+    }
+    else
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+        <div class="pagecontent">
+            @Body
+        </div>
+    }
+
 }
 else
 {
-    @Body
+    <div class="select-oficina-container">
+
+        <h3>Seleccione la oficina actual</h3>
+        <select class="form-control" @onchange="SelectOficinaOnChange">
+            <option value="" selected disabled>Seleccione una Oficina</option>
+            @foreach (var oficina in oficinas)
+            {
+                <option value="@oficina.OficinaId">@oficina.Nombre</option>
+            }
+        </select>
+        <button disabled="@OficinaSelectedIsInvalid" class="btn btn-primary mt-1" @onclick="ClickIniciar">Confirmar</button>
+    </div>
+}
+
+@code {
+    List<Oficinascomerciales> oficinas = [];
+    bool OficinaSelectedIsInvalid = true;
+    int SelectedOficinaID = -1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if ( OficinasComercialService.OficinaActual == null && !NavigationManager.Uri.ToLower().Contains("/admin"))
+        {
+            oficinas = await OficinasComercialService.GetAllOficinasAsync();
+            
+        }
+    }
+
+    private async void ClickIniciar()
+    {
+
+        OficinasComercialService.OficinaActual = oficinas.FirstOrDefault(off => off.OficinaId == SelectedOficinaID);
+        StateHasChanged();
+    }
+
+    private async void SelectOficinaOnChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out int id))
+        {
+            SelectedOficinaID = id;
+            OficinaSelectedIsInvalid = false;
+        }
+        else
+        {
+            SelectedOficinaID = -1;
+            OficinaSelectedIsInvalid = true;
+        }
+    }
 }

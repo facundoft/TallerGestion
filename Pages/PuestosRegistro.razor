@@ -11,21 +11,7 @@
 <h3>Puestos de Registro</h3>
 
 <form id="cedulaForm" @onsubmit="HandleSubmit">
-    <label>Seleccionar oficina:</label>
-    @if (oficinas != null && oficinas.Any())
-    {
-        <select class="form-control" @bind="selectedOficinaId" required>
-            <option value="">Seleccione una Oficina</option>
-            @foreach (var oficina in oficinas)
-            {
-                <option value="@oficina.OficinaId">@oficina.Nombre</option>
-            }
-        </select>
-    }
-    else
-    {
-        <p>Cargando oficinas...</p>
-    }
+
 
     <div class="form-group">
         <label for="cedula">Cédula:</label>
@@ -66,6 +52,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+
+        selectedOficinaId = OficinasComercialService.OficinaActual.OficinaId;
         // Configurar la conexión SignalR
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/atencionHub"))
@@ -119,9 +107,19 @@
                     "En Espera",
                     0
                 );
+                try
+                {
 
-                await atencionservice.CrearNuevaAtencionAsync(atencion);
-                message = "Se ha registrado la atención correctamente";
+                    int numero = await atencionservice.CrearNuevaAtencionAsync(atencion);
+                    message = "Se ha registrado la atención correctamente, su numero es: " + numero;
+                    if (numero == -1){
+                        message = "Error al registrar la atención";
+                    }
+                }
+                catch (Exception e)
+                {
+                    message = "Error al registrar la atención";
+                }
 
                 // Asegúrate de que hubConnection está activo antes de enviar
                 if (hubConnection?.State == HubConnectionState.Connected)

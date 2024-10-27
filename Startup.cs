@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using TallerGestion.Data;
 using TallerGestion.Data.Persistence;
 using TallerGestion.Hubs;
+using static K4os.Compression.LZ4.Engine.Pubternal;
 
 namespace TallerGestion
 {
@@ -36,22 +37,8 @@ namespace TallerGestion
             services.AddScoped<PuestosAtencionService>();
             services.AddScoped<GestionCalidadService>();
             services.AddQuickGridEntityFrameworkAdapter();
-            services.AddDbContextFactory<GestionContext>(options =>
-        options.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=1234"));
-
-            //options.UseSqlServer("Server=localhost;Database=MiBaseDeDatos;Integrated Security=True;");
-
-
-            //services.AddScoped<PuestosAtencionService>();
-            // services.AddSingleton<WeatherForecastService>();
-            /*
-                 services.AddDbContext<AppDbContext>(options =>
-                      options.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=MiBaseDeDatos;User Id=sa;Password=miContraseña;TrustServerCertificate=True;"));
-                    //options.UseSqlServer("Server=localhost;Database=MiBaseDeDatos;Integrated Security=True;");
-
-             services.AddScoped<OficinasComercialService>();
-             services.AddScoped<PuestosAtencionService>();
-            */
+            services.AddDbContext<GestionContext>(o => o.UseMySQL(Configuration.GetConnectionString("Default")));
+            services.AddDbContextFactory<GestionContext>(o => o.UseMySQL(Configuration.GetConnectionString("Default")), ServiceLifetime.Scoped);
         }
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -70,6 +57,7 @@ namespace TallerGestion
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
+            
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>

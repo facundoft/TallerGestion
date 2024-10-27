@@ -12,8 +12,8 @@
 @inject GestionCalidadService GestionCalidadService
 @inject AtencionesService AtencionesService
 
-<h3>Obtener cantidad de clientes en un tiempo</h3>
-<select @bind="Modalidad">
+<h3>Gestión de calidad</h3>
+<select class="form-control" @bind="Modalidad">
     <option value="TIEMPOREAL">Tiempo real</option>
     <option value="PERIODO">Por periodo</option>
 </select>
@@ -24,7 +24,7 @@
 }
 else if (Modalidad == "PERIODO")
 {
-    <label for="filtro-estado">Filtrar por estado</label>
+    <label class="mt-1" for="filtro-estado">Filtrar por estado</label>
     <select class="form-control" id="filtro-estado" name="filtro-estado" @bind="FiltroEstado">
         <option value="todos">Todos</option>
         <option value="En Espera">En espera</option>
@@ -34,25 +34,23 @@ else if (Modalidad == "PERIODO")
     <form class="row g-3">
 
         <div class="col-auto">
-            <label for="inputDateStart" class="visually-hidden">Fecha Inicio</label>
+                <label for="inputDateStart" class="visually-hidden mt-1">Fecha Inicio</label>
             <input type="date" @bind="DateStart" class="form-control" id="inputDateStart">
         </div>
         <div class="col-auto">
-            <label for="inputDateFinish" class="visually-hidden">Fecha fin</label>
+                <label for="inputDateFinish" class="visually-hidden mt-1">Fecha fin</label>
             <input type="date" @bind="DateFinish" class="form-control" id="inputDateFinish">
         </div>
     </form>
-    <div class="col-auto">
-        <button type="button" @onclick="ActualizarAtencionesFiltradas" class="btn btn-primary">Buscar</button>
-    </div>
+    <button type="button mt-1" @onclick="ActualizarAtencionesFiltradas" class="btn btn-primary">Buscar</button>
 
     <h4>Cantidad: @atencionesFiltradas.Count()</h4>
     <div class="table-responsive">
         <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
-            <PropertyColumn Property="atenciones => atenciones.ClienteId" Title="Cliente" />
-            <PropertyColumn Property="atenciones => atenciones.OficinaId" Title="Oficina" />
-            <PropertyColumn Property="atenciones => atenciones.PuestoId" Title="Puesto" />
-            <PropertyColumn Property="atenciones => atenciones.OperarioId" Title="Operario" />
+            <PropertyColumn Property="atenciones => atenciones.Cliente.CedulaIdentidad" Title="Cliente" />
+            <PropertyColumn Property="atenciones => atenciones.Oficina.Nombre" Title="Oficina" />
+            <PropertyColumn Property="atenciones => atenciones.GetPuesto()" Title="Puesto" />
+            <PropertyColumn Property="atenciones => atenciones.GetNombreOperario()" Title="Operario" />
             <PropertyColumn Property="atenciones => atenciones.Tramite.DescripcionTramite" Title="Trámite" />
             <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" Title="Hora Llegada" />
             <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" Title="Hora Atención" />
@@ -93,7 +91,6 @@ else if (Modalidad == "PERIODO")
     {
         try
         {
-
             atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado);
         }
         catch (Exception e)

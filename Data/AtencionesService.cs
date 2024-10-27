@@ -8,6 +8,7 @@ using System;
 using Microsoft.AspNetCore.SignalR;
 using TallerGestion.Hubs;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Google.Protobuf.Compiler;
 
 namespace TallerGestion.Data
 {
@@ -22,14 +23,24 @@ namespace TallerGestion.Data
             _hubContext = hubContext;
         }
 
-        public async Task CrearNuevaAtencionAsync(Atenciones atencion)
+        public async Task<int> CrearNuevaAtencionAsync(Atenciones atencion)
         {
-            // Agregar la nueva atención a la base de datos
-            _context.Atenciones.Add(atencion);
-            await _context.SaveChangesAsync();
+            try
+            {
 
-            // Notificar a los clientes conectados sobre la nueva atención
-            await _hubContext.Clients.All.SendAsync("NuevaAtencion", atencion.OficinaId);
+                // Agregar la nueva atención a la base de datos
+                _context.Atenciones.Add(atencion);
+                await _context.SaveChangesAsync();
+
+                // Notificar a los clientes conectados sobre la nueva atención
+                await _hubContext.Clients.All.SendAsync("NuevaAtencion", atencion.OficinaId);
+                return atencion.AtencionId;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return -1;
+            }
         }
 
 
@@ -100,23 +111,37 @@ namespace TallerGestion.Data
 
         public async Task<IQueryable<Atenciones>> GetAtencionesAsyncFilter(DateTime DateStart, DateTime DateFinish, string FiltroEstado = "todos")
         {
-            if (FiltroEstado == "todos")
-            {
-                return _context.Atenciones
-                      .Where(a => a.FechaHoraLlegada > DateStart)
-                      .Where(a => a.FechaHoraLlegada < DateFinish)
-                      .AsQueryable();
+            var query = _context.Atenciones
+                .Include(a => a.Cliente)
+                .Include(a => a.Oficina)
+                .Include(a => a.Puesto)
+                .Include(a => a.Operario)
+                .Include(a => a.Tramite)
+                .Where(a => a.FechaHoraLlegada > DateStart && a.FechaHoraLlegada < DateFinish);
 
-            }
-            else
+            if (FiltroEstado != "todos")
             {
-                return _context.Atenciones
-                     .Where(a => a.FechaHoraLlegada > DateStart)
-                     .Where(a => a.FechaHoraLlegada < DateFinish)
-                     .Where(a => a.Estado == FiltroEstado).AsQueryable();
+                query = query.Where(a => a.Estado == FiltroEstado);
             }
-
+            return query.AsQueryable();
         }
 
+        public async Task<IQueryable<Atenciones>> GetAtencionesAsyncFilterWithJoins(DateTime DateStart, DateTime DateFinish, string FiltroEstado = "todos")
+        {
+            var query = _context.Atenciones
+                .Include(a => a.Cliente)
+                .Include(a => a.Oficina)
+                .Include(a => a.Puesto)
+                .Include(a => a.Operario)
+                .Include(a => a.Tramite)
+                .Where(a => a.FechaHoraLlegada > DateStart && a.FechaHoraLlegada < DateFinish);
+
+            if (FiltroEstado != "todos")
+            {
+                query = query.Where(a => a.Estado == FiltroEstado);
+            }
+
+            return query.AsQueryable();
+        }
     }
 }

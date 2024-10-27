@@ -9,19 +9,12 @@
 @implements IAsyncDisposable
 @inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
 @inject NavigationManager NavigationManager
-
+@inject OficinasComercialService OficinasComercialService
 <PageTitle>Monitor de Atenciones</PageTitle>
 
 <div class="monitor-container">
     <div class="header">
         <h1>Monitor de Atenciones</h1>
-        <select class="office-select" @onchange="@(e => OnOficinaChanged(e))">
-            <option value="">-- Selecciona una Oficina --</option>
-            @foreach (var oficina in oficinas)
-            {
-                <option value="@oficina.OficinaId">@oficina.Nombre</option>
-            }
-        </select>
     </div>
 
     <div class="monitor-panels">
@@ -102,9 +95,9 @@
     protected override async Task OnInitializedAsync()
     {
         context = DbFactory.CreateDbContext();
-        oficinas = await context.Oficinascomerciales.ToListAsync();
+        selectedOficinaId = OficinasComercialService.OficinaActual.OficinaId;
+        await ActualizarAtenciones();
         await ConfigureSignalR();
-
         updateTimer = new Timer(async _ =>
         {
             await ActualizarAtenciones();

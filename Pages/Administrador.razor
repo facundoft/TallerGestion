@@ -171,20 +171,26 @@
         try
         {
             var nombre = oficinaSeleccionada.Nombre;
-            await OficinasService.DeleteOficinaAsync(deleteOficinaID);
-            oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
-            oficinaSeleccionada = null;
-            successMessage = "Oficina borrada correctamente: " + nombre;
-            TimeoutMensajes();
-        }
-        catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Message.Contains("Cannot delete or update a parent row"))
-        {
-            errorMessage = "No se puede eliminar la oficina. Primero debe eliminar los operarios asociados.";
+            bool pudo = await OficinasService.DeleteOficinaAsync(deleteOficinaID);
+            if (pudo)
+            {
+                oficinas = await OficinasService.GetAllOficinasAsync(); // Actualizar la lista de oficinas
+                oficinaSeleccionada = null;
+                successMessage = "Oficina borrada correctamente: " + nombre;
+
+            }
+            else
+            {
+
+                errorMessage = "No se puede eliminar la oficina. Verifique los operarios y atenciones relacionados.";
+            }
             TimeoutMensajes();
         }
         catch (Exception e)
         {
+            errorMessage = "No se puede eliminar la oficina. " + e.Message;
             Console.WriteLine(e);
+            TimeoutMensajes();
         }
     }
     private void LimpiarMensajes()
@@ -208,6 +214,7 @@
             };
 
         PuestosService.AddPuestoAsync(nuevoPuesto);
+        oficinaSeleccionada.Puestosatencion.Add(nuevoPuesto);
     }
 
     private async Task<List<PuestoAtencion>> GetPuestosAtencion()
@@ -232,7 +239,16 @@
 
     private async Task BorrarPuestoAtencion(int idPuestoClick)
     {
-        await PuestosService.DeletePuestoAsync(idPuestoClick);
-        oficinaSeleccionada.Puestosatencion = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
+        bool pudo = await PuestosService.DeletePuestoAsync(idPuestoClick);
+        if (pudo)
+        {
+            oficinaSeleccionada.Puestosatencion = await OficinasService.GetPuestosatencionOficina(oficinaSeleccionada.OficinaId);
+        }
+        else
+        {
+            LimpiarMensajes();
+            errorMessage = "No se puede borrar el puesto, verifique sus atenciones";
+            TimeoutMensajes();
+        }
     }
 }
