@@ -1,7 +1,64 @@
-﻿@page "/"
+﻿@*@page "/"
 
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
 
 <SurveyPrompt Title="How is Blazor working for you?" />
+*@
+
+
+@inject NavigationManager NavigationManager
+@inherits LayoutComponentBase
+@inject OficinasComercialService OficinasComercialService
+﻿@using TallerGestion.Models
+@page "/"
+
+
+
+
+<div class="select-oficina-container">
+
+    <h3>Seleccione la oficina actual</h3>
+    <select class="form-control" @onchange="SelectOficinaOnChange">
+        <option value="">Seleccione una Oficina</option>
+        @foreach (var oficina in oficinas)
+        {
+            <option value="@oficina.OficinaId">@oficina.Nombre</option>
+        }
+    </select>
+    <button class="btn btn-primary mt-1" @onclick="ClickIniciar">Confirmar</button>
+</div>
+
+
+@code {
+    List<Oficinascomerciales> oficinas = [];
+    bool OficinaSelectedIsInvalid = true;
+    int SelectedOficinaID = -1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        oficinas = await OficinasComercialService.GetAllOficinasAsync();
+    }
+
+    private async void ClickIniciar()
+    {
+
+        OficinasComercialService.OficinaActual = oficinas.FirstOrDefault(off => off.OficinaId == SelectedOficinaID);
+        StateHasChanged();
+    }
+
+    private async void SelectOficinaOnChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value.ToString(), out int id))
+        {
+            SelectedOficinaID = id;
+            OficinaSelectedIsInvalid = false;
+        }
+        else
+        {
+            SelectedOficinaID = -1;
+            OficinaSelectedIsInvalid = true;
+        }
+    }
+}
