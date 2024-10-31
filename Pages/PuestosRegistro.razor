@@ -53,7 +53,7 @@
     protected override async Task OnInitializedAsync()
     {
 
-        selectedOficinaId = OficinasComercialService.OficinaActual.OficinaId;
+        selectedOficinaId = OficinasService.OficinaActual.OficinaId;
         // Configurar la conexión SignalR
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/atencionHub"))

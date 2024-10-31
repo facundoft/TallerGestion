@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using TallerGestion.Models
+@using TallerGestion.Data
 @using TallerGestion.Data.Persistence
 @using Microsoft.AspNetCore.SignalR.Client
 @using TallerGestion.Hubs
@@ -11,6 +12,7 @@
 @inject NavigationManager NavigationManager
 @inject GestionCalidadService GestionCalidadService
 @inject AtencionesService AtencionesService
+@inject OficinasComercialService OficinasComercialService
 
 <h3>Gestión de calidad</h3>
 <select class="form-control" @bind="Modalidad">
@@ -41,6 +43,17 @@ else if (Modalidad == "PERIODO")
                 <label for="inputDateFinish" class="visually-hidden mt-1">Fecha fin</label>
             <input type="date" @bind="DateFinish" class="form-control" id="inputDateFinish">
         </div>
+        <div class="col-auto">
+            <label for="inputOficina" class="visually-hidden mt-1">Fecha fin</label>
+            <select @bind="SelectOficinaFiltro" class="form-control" id="inputOficina">
+                <option value="-1">Todas las oficinas</option>
+                @foreach (var oficina in oficinas)
+                {
+                    <option value="@oficina.OficinaId">@oficina.Nombre</option>
+                }
+            </select>
+        </div>
+
     </form>
     <button type="button mt-1" @onclick="ActualizarAtencionesFiltradas" class="btn btn-primary">Buscar</button>
 
@@ -65,8 +78,10 @@ else if (Modalidad == "PERIODO")
 @code {
     private Dictionary<int, string> TramiteMapper = new Dictionary<int, string> { };
     string FiltroEstado = "todos";
+    int SelectOficinaFiltro = -1;
     DateTime DateStart = DateTime.MinValue;
     DateTime DateFinish = DateTime.MaxValue;
+    List<Oficinascomerciales> oficinas = [];
 
     string Modalidad = "TIEMPOREAL";
     int CountAtenciones = 0;
@@ -79,6 +94,7 @@ else if (Modalidad == "PERIODO")
 
     protected override async Task OnInitializedAsync()
     {
+        oficinas = await OficinasComercialService.GetAllOficinasAsync();
         List<int> idTramites = [];
         context = DbFactory.CreateDbContext();
         CountAtenciones = await context.Atenciones.Where(a => a.Estado == "En Progreso").CountAsync();
@@ -91,7 +107,7 @@ else if (Modalidad == "PERIODO")
     {
         try
         {
-            atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado);
+            atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado, SelectOficinaFiltro);
         }
         catch (Exception e)
         {

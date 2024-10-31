@@ -19,15 +19,8 @@ Welcome to your new app.
 
 <div class="select-oficina-container">
 
-    <h3>Seleccione la oficina actual</h3>
-    <select class="form-control" @onchange="SelectOficinaOnChange">
-        <option value="">Seleccione una Oficina</option>
-        @foreach (var oficina in oficinas)
-        {
-            <option value="@oficina.OficinaId">@oficina.Nombre</option>
-        }
-    </select>
-    <button class="btn btn-primary mt-1" @onclick="ClickIniciar">Confirmar</button>
+    <h3>Indique el tipo de usuario: </h3>
+
 </div>
 
 

@@ -10,7 +10,7 @@ using System.Linq;
 public class OficinasComercialService
 {
     private readonly GestionContext _context;
-    public static Oficinascomerciales OficinaActual { get; set; }
+    public Oficinascomerciales OficinaActual { get; set; }
     public OficinasComercialService(GestionContext context)
     {
         _context = context;

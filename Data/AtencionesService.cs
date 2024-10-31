@@ -109,7 +109,7 @@ namespace TallerGestion.Data
         }
 
 
-        public async Task<IQueryable<Atenciones>> GetAtencionesAsyncFilter(DateTime DateStart, DateTime DateFinish, string FiltroEstado = "todos")
+        public async Task<IQueryable<Atenciones>> GetAtencionesAsyncFilter(DateTime DateStart, DateTime DateFinish, string FiltroEstado = "todos", int Oficina=-1)
         {
             var query = _context.Atenciones
                 .Include(a => a.Cliente)
@@ -122,6 +122,10 @@ namespace TallerGestion.Data
             if (FiltroEstado != "todos")
             {
                 query = query.Where(a => a.Estado == FiltroEstado);
+            }
+            if(Oficina != -1)
+            {
+                query = query.Where(a => a.OficinaId == Oficina);
             }
             return query.AsQueryable();
         }
