@@ -41,7 +41,7 @@
                     }
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary" disabled="@(!operariosDisponibles || !puestosDisponibles)">
+            <button type="submit" class="btn btn-primary mt-1" disabled="@(!operariosDisponibles || !puestosDisponibles)">
                 Iniciar Sesión
             </button>
         </EditForm>
@@ -59,7 +59,9 @@ else
         {
             <div class="table-responsive">
                 <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
-                    <PropertyColumn Property="atenciones => atenciones.ClienteId" Title="Cliente" />
+
+                    <PropertyColumn Property="atenciones => atenciones.AtencionId" Title="Nro Atención" />
+                    <PropertyColumn Property="atenciones => atenciones.Cliente.CedulaIdentidad" Title="CI Cliente" />
                     <PropertyColumn Property="atenciones => atenciones.OficinaId" Title="Oficina" />
                     <PropertyColumn Property="atenciones => atenciones.GetPuesto()" Title="Puesto" />
                     <PropertyColumn Property="atenciones => atenciones.GetNombreOperario()" Title="Operario" />

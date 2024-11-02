@@ -1,5 +1,5 @@
 ﻿@page "/gestion"
-@using TallerGestion.Pages.Components
+@using TallerGestion.Pages
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using TallerGestion.Models
@@ -7,6 +7,8 @@
 @using TallerGestion.Data.Persistence
 @using Microsoft.AspNetCore.SignalR.Client
 @using TallerGestion.Hubs
+@using ChartJs.Blazor.BarChart
+
 @inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
@@ -36,11 +38,11 @@ else if (Modalidad == "PERIODO")
     <form class="row g-3">
 
         <div class="col-auto">
-                <label for="inputDateStart" class="visually-hidden mt-1">Fecha Inicio</label>
+            <label for="inputDateStart" class="visually-hidden mt-1">Fecha Inicio</label>
             <input type="date" @bind="DateStart" class="form-control" id="inputDateStart">
         </div>
         <div class="col-auto">
-                <label for="inputDateFinish" class="visually-hidden mt-1">Fecha fin</label>
+            <label for="inputDateFinish" class="visually-hidden mt-1">Fecha fin</label>
             <input type="date" @bind="DateFinish" class="form-control" id="inputDateFinish">
         </div>
         <div class="col-auto">
@@ -72,10 +74,16 @@ else if (Modalidad == "PERIODO")
             <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
         </QuickGrid>
     </div>
+    <h3>Promedio de Tiempos</h3>
+    <ul>
+        <li>Promedio de tiempo de espera: @Promedios["Espera"] minutos</li>
+        <li>Promedio de tiempo de finalizacion: @Promedios["Finalizacion"] minutos</li>
+    </ul>
 }
 
-
 @code {
+    Dictionary<string, double> Promedios = new Dictionary<string, double>();
+    private BarConfig _barConfig;
     private Dictionary<int, string> TramiteMapper = new Dictionary<int, string> { };
     string FiltroEstado = "todos";
     int SelectOficinaFiltro = -1;
@@ -100,6 +108,7 @@ else if (Modalidad == "PERIODO")
         CountAtenciones = await context.Atenciones.Where(a => a.Estado == "En Progreso").CountAsync();
         CountClientesEspera = await context.Atenciones.Where(a => a.Estado == "En Espera").CountAsync();
         await ActualizarAtencionesFiltradas();
+        // ConfigureBarConfig();
     }
 
 
@@ -108,11 +117,62 @@ else if (Modalidad == "PERIODO")
         try
         {
             atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado, SelectOficinaFiltro);
+            GetPromedios();
         }
         catch (Exception e)
         {
         }
         await InvokeAsync(StateHasChanged); // Asegura que la UI se actualice
     }
+    public void GetPromedios()
+    {
+
+        Promedios["Espera"] = 0;
+        Promedios["Finalizacion"] = 0;
+        int countEspera = 0;
+        int countFinalizado = 0;
+        TimeSpan span;
+
+        foreach (var atencion in atencionesFiltradas)
+        {
+            if (atencion.FechaHoraAtencion.HasValue && atencion.FechaHoraLlegada.HasValue)
+            {
+                span = atencion.FechaHoraAtencion.Value - atencion.FechaHoraLlegada.Value;
+                Promedios["Espera"] += span.TotalMinutes;
+                countEspera++;
+                if (atencion.FechaHoraFinalizacion.HasValue)
+                {
+                    span = atencion.FechaHoraFinalizacion.Value - atencion.FechaHoraAtencion.Value;
+                    Promedios["Finalizacion"] += span.TotalMinutes;
+                    countFinalizado++;
+                }
+            }
+        }
+
+        Promedios["Espera"] = Promedios["Espera"] / countEspera;
+        Promedios["Finalizacion"] = Promedios["Finalizacion"] / countFinalizado;
+    }
+
+    public List< int > GetCantidadAtencionesPorDia()
+    {
+           
+    }
+
+    private void ConfigureBarConfig()
+    {
+        _barConfig = new BarConfig();
+
+        _barConfig.Options = new BarOptions
+            {
+                Responsive = true,
+                Title = new OptionsTitle
+                {
+                    Display = true,
+                    Text = "Cantidad de atenciones por fecha"
+                },
+            };
+
+    }
+
 }
 
