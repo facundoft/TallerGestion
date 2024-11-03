@@ -32,13 +32,13 @@ namespace TallerGestion
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSignalR();
+            services.AddDbContext<GestionContext>(o => o.UseMySQL(Configuration.GetConnectionString("Default")));
+            services.AddDbContextFactory<GestionContext>(o => o.UseMySQL(Configuration.GetConnectionString("Default")), ServiceLifetime.Scoped);
             services.AddScoped<AtencionesService>();
             services.AddScoped<OficinasComercialService>();
             services.AddScoped<PuestosAtencionService>();
             services.AddScoped<GestionCalidadService>();
             services.AddQuickGridEntityFrameworkAdapter();
-            services.AddDbContext<GestionContext>(o => o.UseMySQL(Configuration.GetConnectionString("Default")));
-            services.AddDbContextFactory<GestionContext>(o => o.UseMySQL(Configuration.GetConnectionString("Default")), ServiceLifetime.Scoped);
         }
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

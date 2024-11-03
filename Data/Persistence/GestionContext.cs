@@ -28,6 +28,7 @@ public partial class GestionContext : DbContext
 
     public virtual DbSet<Atenciones> Atenciones { get; set; }
 
+    public virtual DbSet<CantAtencionesTramite> CantAtencionesTramite { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Clientes>(entity =>
@@ -100,7 +101,6 @@ public partial class GestionContext : DbContext
                 .HasMaxLength(100);
         });
 
-        OnModelCreatingPartial(modelBuilder);
 
         modelBuilder.Entity<Atenciones>(entity =>
         {
@@ -126,6 +126,18 @@ public partial class GestionContext : DbContext
             entity.Property(e => e.SegundaLlamado).HasColumnType("tinyint");
         });
 
+        modelBuilder.Entity<CantAtencionesTramite>(entity =>
+        {
+
+            entity.HasKey(e => e.TramiteID).HasName("PRIMARY");
+            entity.ToTable("CantAtencionesTramite");
+            entity.Property(e => e.TramiteID).HasColumnName("TramiteID");
+            entity.Property(e => e.CantAtenciones).HasColumnName("CantAtenciones");
+            entity.Property(e => e.DescripcionTramite).HasColumnName("DescripcionTramite");
+
+        });
+
+        OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

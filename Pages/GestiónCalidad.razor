@@ -7,7 +7,7 @@
 @using TallerGestion.Data.Persistence
 @using Microsoft.AspNetCore.SignalR.Client
 @using TallerGestion.Hubs
-@using ChartJs.Blazor.BarChart
+@using ChartJs.Blazor.PieChart
 
 @inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
 @inject IJSRuntime JSRuntime
@@ -15,8 +15,12 @@
 @inject GestionCalidadService GestionCalidadService
 @inject AtencionesService AtencionesService
 @inject OficinasComercialService OficinasComercialService
-
+@using TallerGestion.Pages.Components.Graficas
 <h3>Gestión de calidad</h3>
+@if (cantAtencionesTramites.Count > 0)
+{
+    <EjemploPieChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></EjemploPieChart>
+}
 <select class="form-control" @bind="Modalidad">
     <option value="TIEMPOREAL">Tiempo real</option>
     <option value="PERIODO">Por periodo</option>
@@ -83,8 +87,9 @@ else if (Modalidad == "PERIODO")
 
 @code {
     Dictionary<string, double> Promedios = new Dictionary<string, double>();
-    private BarConfig _barConfig;
+    EjemploPieChart CantAtencionesTramitesChart;
     private Dictionary<int, string> TramiteMapper = new Dictionary<int, string> { };
+    private List<CantAtencionesTramite> cantAtencionesTramites = [];
     string FiltroEstado = "todos";
     int SelectOficinaFiltro = -1;
     DateTime DateStart = DateTime.MinValue;
@@ -102,15 +107,14 @@ else if (Modalidad == "PERIODO")
 
     protected override async Task OnInitializedAsync()
     {
+        cantAtencionesTramites = await GestionCalidadService.GetCantAtencionesTramites();
         oficinas = await OficinasComercialService.GetAllOficinasAsync();
         List<int> idTramites = [];
         context = DbFactory.CreateDbContext();
         CountAtenciones = await context.Atenciones.Where(a => a.Estado == "En Progreso").CountAsync();
         CountClientesEspera = await context.Atenciones.Where(a => a.Estado == "En Espera").CountAsync();
         await ActualizarAtencionesFiltradas();
-        // ConfigureBarConfig();
     }
-
 
     private async Task ActualizarAtencionesFiltradas()
     {
@@ -123,6 +127,7 @@ else if (Modalidad == "PERIODO")
         {
         }
         await InvokeAsync(StateHasChanged); // Asegura que la UI se actualice
+
     }
     public void GetPromedios()
     {
@@ -153,26 +158,11 @@ else if (Modalidad == "PERIODO")
         Promedios["Finalizacion"] = Promedios["Finalizacion"] / countFinalizado;
     }
 
-    public List< int > GetCantidadAtencionesPorDia()
+    public List<int> GetCantidadAtencionesPorDia()
     {
         return [];
     }
 
-    private void ConfigureBarConfig()
-    {
-        _barConfig = new BarConfig();
-
-        _barConfig.Options = new BarOptions
-            {
-                Responsive = true,
-                Title = new OptionsTitle
-                {
-                    Display = true,
-                    Text = "Cantidad de atenciones por fecha"
-                },
-            };
-
-    }
 
 }
 

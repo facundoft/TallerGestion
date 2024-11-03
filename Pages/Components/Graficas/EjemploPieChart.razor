@@ -1,0 +1,75 @@
+﻿@using ChartJs.Blazor.PieChart
+@inject GestionCalidadService GestionCalidadService
+@inject OficinasComercialService OficinasComercialService
+<Chart Config="_config"></Chart>
+@foreach(CantAtencionesTramite c in CantAtencionesTramites)
+{
+    <p>@c.DescripcionTramite: @c.CantAtenciones</p>
+}
+@code {
+    [Parameter]
+    public List<CantAtencionesTramite> CantAtencionesTramites { get; set; } = [];
+
+    private PieConfig _config;
+
+    public void UpdateChart()
+    {
+        _config = new PieConfig
+            {
+                Options = new PieOptions
+                {
+                    Responsive = true,
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "Atenciones por trámite"
+                    }
+                }
+            };
+
+
+        var dataValues = new List<int>();
+
+        // PieDataset<int> dataset = new PieDataset<int>(dataValues)
+        foreach (CantAtencionesTramite cantAtenciones in CantAtencionesTramites)
+        {
+            dataValues.Add(cantAtenciones.CantAtenciones);
+            _config.Data.Labels.Add(cantAtenciones.DescripcionTramite);
+        }
+
+        PieDataset<int> dataset = new PieDataset<int>(dataValues)
+            {
+                BackgroundColor = new[]
+                    {
+                    ColorUtil.ColorHexString(255, 99, 132),    // Slice 1 (Red)
+                    ColorUtil.ColorHexString(255, 205, 86),    // Slice 2 (Yellow)
+                    ColorUtil.ColorHexString(75, 192, 192),    // Slice 3 (Green)
+                    ColorUtil.ColorHexString(54, 162, 235),    // Slice 4 (Blue)
+                    ColorUtil.ColorHexString(153, 102, 255),   // Slice 5 (Purple)
+                    ColorUtil.ColorHexString(255, 159, 64),    // Slice 6 (Orange)
+                    ColorUtil.ColorHexString(201, 203, 207),   // Slice 7 (Grey)
+                    ColorUtil.ColorHexString(255, 99, 71),     // Slice 8 (Tomato)
+                    ColorUtil.ColorHexString(144, 238, 144),   // Slice 9 (Light Green)
+                    ColorUtil.ColorHexString(100, 149, 237),   // Slice 10 (Cornflower Blue)
+
+                    ColorUtil.ColorHexString(255, 182, 193),   // Slice 11 (Light Pink)
+                    ColorUtil.ColorHexString(250, 128, 114),   // Slice 12 (Salmon)
+                    ColorUtil.ColorHexString(70, 130, 180),    // Slice 13 (Steel Blue)
+                    ColorUtil.ColorHexString(255, 215, 0),     // Slice 14 (Gold)
+                    ColorUtil.ColorHexString(238, 130, 238),   // Slice 15 (Violet)
+                    ColorUtil.ColorHexString(176, 224, 230),   // Slice 16 (Powder Blue)
+                    ColorUtil.ColorHexString(102, 205, 170),   // Slice 17 (Medium Aquamarine)
+                    ColorUtil.ColorHexString(255, 228, 181),   // Slice 18 (Moccasin)
+                    ColorUtil.ColorHexString(60, 179, 113),    // Slice 19 (Medium Sea Green)
+                    ColorUtil.ColorHexString(221, 160, 221)    // Slice 20 (Plum)
+                }
+            };
+
+        _config.Data.Datasets.Add(dataset);
+    }
+
+    protected override void OnInitialized()
+    {
+        UpdateChart();
+    }
+}
