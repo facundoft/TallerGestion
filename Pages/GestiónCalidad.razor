@@ -16,11 +16,28 @@
 @inject AtencionesService AtencionesService
 @inject OficinasComercialService OficinasComercialService
 @using TallerGestion.Pages.Components.Graficas
+
+<style>
+    .tabla-atenciones {
+        max-height: 600px;
+        overflow: hidden scroll;
+    }
+</style>
 <h3>Gestión de calidad</h3>
+dia de hoy test @((int)DateTime.Now.DayOfWeek)
 @if (cantAtencionesTramites.Count > 0)
 {
-    <EjemploPieChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></EjemploPieChart>
+    <AtencionesPorTramiteChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></AtencionesPorTramiteChart>
 }
+@if (AtencionesPorDiaSemana.Any())
+{
+    <AtencionesPorDiaSemanaChart @ref="AtencionesPorDiaSemanaChart" AtencionesDias="AtencionesPorDiaSemana"></AtencionesPorDiaSemanaChart>
+}
+@if(AtencionesPorMes.Any())
+{
+    <AtencionesPorFecha AtencionesMes="AtencionesPorMes" @ref="AtencionesPorFecha"></AtencionesPorFecha>
+}
+<h2>Ver información de:</h2>
 <select class="form-control" @bind="Modalidad">
     <option value="TIEMPOREAL">Tiempo real</option>
     <option value="PERIODO">Por periodo</option>
@@ -29,6 +46,7 @@
 {
     <p>Cantidad de atenciones actuales: <span>@CountAtenciones</span></p>
     <p>Cantidad de clientes en espera: <span>@CountClientesEspera</span></p>
+
 }
 else if (Modalidad == "PERIODO")
 {
@@ -36,6 +54,7 @@ else if (Modalidad == "PERIODO")
     <select class="form-control" id="filtro-estado" name="filtro-estado" @bind="FiltroEstado">
         <option value="todos">Todos</option>
         <option value="En Espera">En espera</option>
+        <option value="En Atención">En Atención</option>
         <option value="En Progreso">En progreso</option>
         <option value="Finalizado">Finalizado</option>
     </select>
@@ -61,10 +80,14 @@ else if (Modalidad == "PERIODO")
         </div>
 
     </form>
-    <button type="button mt-1" @onclick="ActualizarAtencionesFiltradas" class="btn btn-primary">Buscar</button>
-
-    <h4>Cantidad: @atencionesFiltradas.Count()</h4>
-    <div class="table-responsive">
+    <button type="button" @onclick="ActualizarAtencionesFiltradasBtnClick" class="btn btn-primary mt-1">Buscar</button>
+    <h3 class="mt-2">Promedio de Tiempos</h3>
+    <ul>
+        <li>Promedio de tiempo de espera: @Promedios["Espera"] minutos</li>
+        <li>Promedio de tiempo de finalizacion: @Promedios["Finalizacion"] minutos</li>
+    </ul>
+    <h4 class="mt-2">Cantidad: @atencionesFiltradas.Count()</h4>
+    <div class="table-responsive tabla-atenciones">
         <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
             <PropertyColumn Property="atenciones => atenciones.Cliente.CedulaIdentidad" Title="Cliente" />
             <PropertyColumn Property="atenciones => atenciones.Oficina.Nombre" Title="Oficina" />
@@ -78,16 +101,17 @@ else if (Modalidad == "PERIODO")
             <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
         </QuickGrid>
     </div>
-    <h3>Promedio de Tiempos</h3>
-    <ul>
-        <li>Promedio de tiempo de espera: @Promedios["Espera"] minutos</li>
-        <li>Promedio de tiempo de finalizacion: @Promedios["Finalizacion"] minutos</li>
-    </ul>
+
 }
 
 @code {
     Dictionary<string, double> Promedios = new Dictionary<string, double>();
-    EjemploPieChart CantAtencionesTramitesChart;
+    AtencionesPorTramiteChart CantAtencionesTramitesChart;
+    AtencionesPorDiaSemanaChart AtencionesPorDiaSemanaChart;
+    AtencionesPorFecha AtencionesPorFecha;
+
+    List<int> AtencionesPorDiaSemana = new List<int>();
+    List<int> AtencionesPorMes = new List<int>();
     private Dictionary<int, string> TramiteMapper = new Dictionary<int, string> { };
     private List<CantAtencionesTramite> cantAtencionesTramites = [];
     string FiltroEstado = "todos";
@@ -121,7 +145,20 @@ else if (Modalidad == "PERIODO")
         try
         {
             atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado, SelectOficinaFiltro);
+
+            AtencionesPorDiaSemana = [0,0,0,0,0,0,0];
+            AtencionesPorMes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            foreach(var atencion in atencionesFiltradas)
+            {
+                if (atencion.FechaHoraAtencion.HasValue)
+                {
+                    AtencionesPorDiaSemana[(int)atencion.FechaHoraAtencion.Value.DayOfWeek]++;
+                    AtencionesPorMes[(int)atencion.FechaHoraAtencion.Value.Month]++;
+                }
+            }
+
             GetPromedios();
+
         }
         catch (Exception e)
         {
@@ -129,6 +166,19 @@ else if (Modalidad == "PERIODO")
         await InvokeAsync(StateHasChanged); // Asegura que la UI se actualice
 
     }
+
+    private async Task ActualizarAtencionesFiltradasBtnClick()
+    {
+        await ActualizarAtencionesFiltradas();
+
+        AtencionesPorDiaSemanaChart.UpdateChart();
+
+        AtencionesPorFecha.UpdateChart(); 
+
+        CantAtencionesTramitesChart.UpdateChart();
+
+    }
+
     public void GetPromedios()
     {
 
