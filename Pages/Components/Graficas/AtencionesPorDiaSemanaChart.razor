@@ -11,63 +11,71 @@
     public Chart _chart;
     private PieConfig _config;
 
-    public void UpdateChart()
+    public void UpdateChart(List<int> atencionesDias)
     {
         RemoveDataset();
-        _config = new PieConfig
-            {
-                Options = new PieOptions
-                {
-                    Legend = new Legend
-                    {
-                        Display = false
-                    },
-                    Responsive = true,
-                    Title = new OptionsTitle
-                    {
-                        Display = true,
-                        Text = "Atenciones por dia"
-                    }
-                }
-            };
 
 
-        var dataValues = new List<int>();
-
-        // PieDataset<int> dataset = new PieDataset<int>(dataValues)
-        foreach (int cantAtenciones in AtencionesDias)
+        PieDataset<int> dataset = new PieDataset<int>(atencionesDias)
         {
-            dataValues.Add(cantAtenciones);
-        }
-        foreach (string dia in new[] { "Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado" })
-        {
-            _config.Data.Labels.Add(dia);
-        }
-
-        PieDataset<int> dataset = new PieDataset<int>(dataValues)
+            BackgroundColor = new[]
             {
-                BackgroundColor = new[]
-                        {
-                    ColorUtil.ColorHexString(255, 99, 132),    // Slice 1 (Red)
-                    ColorUtil.ColorHexString(255, 205, 86),    // Slice 2 (Yellow)
-                    ColorUtil.ColorHexString(75, 192, 192),    // Slice 3 (Green)
-                    ColorUtil.ColorHexString(54, 162, 235),    // Slice 4 (Blue)
-                    ColorUtil.ColorHexString(153, 102, 255),   // Slice 5 (Purple)
-                    ColorUtil.ColorHexString(255, 159, 64),    // Slice 6 (Orange)
-                    ColorUtil.ColorHexString(201, 203, 207),   // Slice 7 (Grey)
-                }
-            };
+                ColorUtil.ColorHexString(255, 99, 132),    // Slice 1 (Red)
+                ColorUtil.ColorHexString(255, 205, 86),    // Slice 2 (Yellow)
+                ColorUtil.ColorHexString(75, 192, 192),    // Slice 3 (Green)
+                ColorUtil.ColorHexString(54, 162, 235),    // Slice 4 (Blue)
+                ColorUtil.ColorHexString(153, 102, 255),   // Slice 5 (Purple)
+                ColorUtil.ColorHexString(255, 159, 64),    // Slice 6 (Orange)
+                ColorUtil.ColorHexString(201, 203, 207),   // Slice 7 (Grey)
+            }
+        };
 
         _config.Data.Datasets.Add(dataset);
     }
     private void RemoveDataset()
     {
-        _config = null;
+        _config.Data.Datasets.Clear();
     }
 
     protected override void OnInitialized()
     {
-        UpdateChart();
+        _config = new PieConfig
+        {
+            Options = new PieOptions
+            {
+                Legend = new Legend
+                {
+                    Display = false
+                },
+                Responsive = true,
+                Title = new OptionsTitle
+                {
+                    Display = true,
+                    Text = "Atenciones por dia"
+                }
+            }
+        };
+        
+        foreach (string dia in new[] { "Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado" })
+        {
+            _config.Data.Labels.Add(dia);
+        }
+
+        PieDataset<int> dataset = new PieDataset<int>(AtencionesDias)
+        {
+            BackgroundColor = new[]
+            {
+                ColorUtil.ColorHexString(255, 99, 132),    // Slice 1 (Red)
+                ColorUtil.ColorHexString(255, 205, 86),    // Slice 2 (Yellow)
+                ColorUtil.ColorHexString(75, 192, 192),    // Slice 3 (Green)
+                ColorUtil.ColorHexString(54, 162, 235),    // Slice 4 (Blue)
+                ColorUtil.ColorHexString(153, 102, 255),   // Slice 5 (Purple)
+                ColorUtil.ColorHexString(255, 159, 64),    // Slice 6 (Orange)
+                ColorUtil.ColorHexString(201, 203, 207),   // Slice 7 (Grey)
+            }
+        };
+
+        _config.Data.Datasets.Add(dataset);
     }
         public List<String> Colores = [
         "rgb(255, 99, 132)",    // Slice 1 (Red)

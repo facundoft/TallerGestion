@@ -24,19 +24,22 @@
     }
 </style>
 <h3>Gestión de calidad</h3>
-dia de hoy test @((int)DateTime.Now.DayOfWeek)
-@if (cantAtencionesTramites.Count > 0)
-{
-    <AtencionesPorTramiteChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></AtencionesPorTramiteChart>
-}
-@if (AtencionesPorDiaSemana.Any())
-{
-    <AtencionesPorDiaSemanaChart @ref="AtencionesPorDiaSemanaChart" AtencionesDias="AtencionesPorDiaSemana"></AtencionesPorDiaSemanaChart>
-}
-@if(AtencionesPorMes.Any())
-{
-    <AtencionesPorFecha AtencionesMes="AtencionesPorMes" @ref="AtencionesPorFecha"></AtencionesPorFecha>
-}
+<div style="width: 600px">
+    @if (cantAtencionesTramites.Count > 0)
+    {
+        <AtencionesPorTramiteChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></AtencionesPorTramiteChart>
+    }
+    @if (AtencionesPorDiaSemana.Any())
+    {
+        <AtencionesPorDiaSemanaChart @ref="AtencionesPorDiaSemanaChart" AtencionesDias="AtencionesPorDiaSemana"></AtencionesPorDiaSemanaChart>
+    }
+    @if(AtencionesPorMes.Any())
+    {
+        <AtencionesPorFecha AtencionesMes="AtencionesPorMes" @ref="AtencionesPorFecha"></AtencionesPorFecha>
+    }
+</div>
+<div style="max-width: 900px">
+    
 <h2>Ver información de:</h2>
 <select class="form-control" @bind="Modalidad">
     <option value="TIEMPOREAL">Tiempo real</option>
@@ -88,7 +91,7 @@ else if (Modalidad == "PERIODO")
     </ul>
     <h4 class="mt-2">Cantidad: @atencionesFiltradas.Count()</h4>
     <div class="table-responsive tabla-atenciones">
-        <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
+        <QuickGrid Class="table table-striped table-hover small" Items="atencionesFiltradas">
             <PropertyColumn Property="atenciones => atenciones.Cliente.CedulaIdentidad" Title="Cliente" />
             <PropertyColumn Property="atenciones => atenciones.Oficina.Nombre" Title="Oficina" />
             <PropertyColumn Property="atenciones => atenciones.GetPuesto()" Title="Puesto" />
@@ -103,6 +106,7 @@ else if (Modalidad == "PERIODO")
     </div>
 
 }
+</div>
 
 @code {
     Dictionary<string, double> Promedios = new Dictionary<string, double>();
@@ -133,11 +137,11 @@ else if (Modalidad == "PERIODO")
     {
         cantAtencionesTramites = await GestionCalidadService.GetCantAtencionesTramites();
         oficinas = await OficinasComercialService.GetAllOficinasAsync();
-        List<int> idTramites = [];
         context = DbFactory.CreateDbContext();
         CountAtenciones = await context.Atenciones.Where(a => a.Estado == "En Progreso").CountAsync();
         CountClientesEspera = await context.Atenciones.Where(a => a.Estado == "En Espera").CountAsync();
         await ActualizarAtencionesFiltradas();
+        DateStart = DateFinish = DateTime.Now;
     }
 
     private async Task ActualizarAtencionesFiltradas()
@@ -157,6 +161,23 @@ else if (Modalidad == "PERIODO")
                 }
             }
 
+            foreach (var ct in cantAtencionesTramites)
+            {
+                ct.CantAtenciones = 0;
+            }
+            
+            foreach (var atencion in atencionesFiltradas)
+            {
+                foreach (var ct in cantAtencionesTramites)
+                {
+                    if (ct.TramiteID == atencion.TramiteId)
+                    {
+                        ct.CantAtenciones++;
+                        break;
+                    }
+                }
+            }
+            
             GetPromedios();
 
         }
@@ -171,11 +192,11 @@ else if (Modalidad == "PERIODO")
     {
         await ActualizarAtencionesFiltradas();
 
-        AtencionesPorDiaSemanaChart.UpdateChart();
+        AtencionesPorDiaSemanaChart.UpdateChart(AtencionesPorDiaSemana);
 
-        AtencionesPorFecha.UpdateChart(); 
+        AtencionesPorFecha.UpdateChart(AtencionesPorMes); 
 
-        CantAtencionesTramitesChart.UpdateChart();
+        CantAtencionesTramitesChart.UpdateChart(cantAtencionesTramites);
 
     }
 
@@ -207,12 +228,6 @@ else if (Modalidad == "PERIODO")
         Promedios["Espera"] = Promedios["Espera"] / countEspera;
         Promedios["Finalizacion"] = Promedios["Finalizacion"] / countFinalizado;
     }
-
-    public List<int> GetCantidadAtencionesPorDia()
-    {
-        return [];
-    }
-
-
+    
 }
 

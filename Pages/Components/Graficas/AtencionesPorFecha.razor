@@ -13,12 +13,7 @@
 
     protected override void OnInitialized()
     {
-        UpdateChart();
-    }
-    public void UpdateChart()
-    {
-        RemoveDataset();
-        _config = new LineConfig
+         _config = new LineConfig
             {
                 Options = new LineOptions
                 {
@@ -65,19 +60,13 @@
             };
 
 
-        var dataValues = new List<int>();
 
-        // PieDataset<int> dataset = new PieDataset<int>(dataValues)
-        foreach (int cantAtenciones in AtencionesMes)
-        {
-            dataValues.Add(cantAtenciones);
-        }
         foreach (string dia in new[] { "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre" })
         {
             _config.Data.Labels.Add(dia);
         }
 
-        LineDataset<int> dataset = new LineDataset<int>(dataValues)
+        LineDataset<int> dataset = new LineDataset<int>(AtencionesMes)
             {
                 Label = "Meses",
                 BackgroundColor = ColorUtil.ColorString(255,0,0),
@@ -87,8 +76,22 @@
 
         _config.Data.Datasets.Add(dataset);
     }
+    public void UpdateChart( List<int> atencionesMes)
+    {
+        RemoveDataset();
+
+        LineDataset<int> dataset = new LineDataset<int>(atencionesMes)
+        {
+            Label = "Meses",
+            BackgroundColor = ColorUtil.ColorString(255,0,0),
+            BorderColor = ColorUtil.ColorString(255, 0, 0),
+            Fill = FillingMode.Disabled
+        };
+        
+        _config.Data.Datasets.Add(dataset);
+    }
     private void RemoveDataset()
     {
-        _config = null;
+        _config.Data.Datasets.Clear();
     }
 }
