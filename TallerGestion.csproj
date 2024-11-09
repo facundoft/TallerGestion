@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+	  <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ChartJs.Blazor.Fork" Version="2.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.10" />
@@ -42,6 +44,10 @@
 
   <ItemGroup>
     <None Include="Pages\Components\AtencionesPages\CountDownTimer.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\css\NewFolder1\" />
   </ItemGroup>
 
 </Project>

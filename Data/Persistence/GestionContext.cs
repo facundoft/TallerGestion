@@ -28,10 +28,7 @@ public partial class GestionContext : DbContext
 
     public virtual DbSet<Atenciones> Atenciones { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySQL("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo");
-
+    public virtual DbSet<CantAtencionesTramite> CantAtencionesTramite { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Clientes>(entity =>
@@ -104,7 +101,6 @@ public partial class GestionContext : DbContext
                 .HasMaxLength(100);
         });
 
-        OnModelCreatingPartial(modelBuilder);
 
         modelBuilder.Entity<Atenciones>(entity =>
         {
@@ -130,6 +126,18 @@ public partial class GestionContext : DbContext
             entity.Property(e => e.SegundaLlamado).HasColumnType("tinyint");
         });
 
+        modelBuilder.Entity<CantAtencionesTramite>(entity =>
+        {
+
+            entity.HasKey(e => e.TramiteID).HasName("PRIMARY");
+            entity.ToTable("CantAtencionesTramite");
+            entity.Property(e => e.TramiteID).HasColumnName("TramiteID");
+            entity.Property(e => e.CantAtenciones).HasColumnName("CantAtenciones");
+            entity.Property(e => e.DescripcionTramite).HasColumnName("DescripcionTramite");
+
+        });
+
+        OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

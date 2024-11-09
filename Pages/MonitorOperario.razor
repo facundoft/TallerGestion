@@ -10,7 +10,7 @@
 @inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
-
+@inject OficinasComercialService OficinasComercialService 
 <PageTitle>Index</PageTitle>
 
 @if (mostrarFormulario)
@@ -18,16 +18,7 @@
     <div class="container mt-4">
         <h1 class="mb-4">Login de Puesto</h1>
         <EditForm Model="@this" OnValidSubmit="OcultarFormulario">
-            <div class="form-group mb-3">
-                <label class="form-label">Seleccionar Oficina</label>
-                <select class="form-select" @onchange="@(e => OnOficinaChanged(e))">
-                    <option value="">-- Selecciona una Oficina --</option>
-                    @foreach (var oficina in oficinas)
-                    {
-                        <option value="@oficina.OficinaId">@oficina.Nombre</option>
-                    }
-                </select>
-            </div>
+
 
             <div class="form-group mb-3">
                 <label class="form-label">Seleccionar Operario</label>
@@ -50,7 +41,7 @@
                     }
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary" disabled="@(!operariosDisponibles || !puestosDisponibles)">
+            <button type="submit" class="btn btn-primary mt-1" disabled="@(!operariosDisponibles || !puestosDisponibles)">
                 Iniciar Sesión
             </button>
         </EditForm>
@@ -68,10 +59,12 @@ else
         {
             <div class="table-responsive">
                 <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
-                    <PropertyColumn Property="atenciones => atenciones.ClienteId" Title="Cliente" />
+
+                    <PropertyColumn Property="atenciones => atenciones.AtencionId" Title="Nro Atención" />
+                    <PropertyColumn Property="atenciones => atenciones.Cliente.CedulaIdentidad" Title="CI Cliente" />
                     <PropertyColumn Property="atenciones => atenciones.OficinaId" Title="Oficina" />
-                    <PropertyColumn Property="atenciones => atenciones.PuestoId" Title="Puesto" />
-                    <PropertyColumn Property="atenciones => atenciones.OperarioId" Title="Operario" />
+                    <PropertyColumn Property="atenciones => atenciones.GetPuesto()" Title="Puesto" />
+                    <PropertyColumn Property="atenciones => atenciones.GetNombreOperario()" Title="Operario" />
                     <PropertyColumn Property="atenciones => atenciones.TramiteId" Title="Trámite" />
                     <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" Title="Hora Llegada" />
                     <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" Title="Hora Atención" />
@@ -80,7 +73,7 @@ else
                     <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
 
                     <TemplateColumn Context="atenciones">
-                        @if (atenciones.Estado != "En Progreso")
+                        @if (atenciones.Estado == "En Espera")
                         {
                             <button class="btn btn-primary btn-sm" @onclick="() => IniciarLlamado(atenciones)">
                                 Atender
@@ -156,7 +149,6 @@ else
 
 @code {
     private GestionContext context = default!;
-    private List<Oficinascomerciales> oficinas = new();
     private List<Operarios> operarios = new();
     private List<PuestoAtencion> puestos = new();
     private int? selectedOficinaId;
@@ -181,7 +173,9 @@ else
     protected override async Task OnInitializedAsync()
     {
         context = DbFactory.CreateDbContext();
-        oficinas = await context.Oficinascomerciales.ToListAsync();
+        selectedOficinaId = OficinasComercialService.OficinaActual.OficinaId;
+        await CargarOperariosYPuestos();
+        await ActualizarAtencionesFiltradas();
         await ConfigureSignalR();
     }
 
@@ -230,13 +224,6 @@ else
         }
         await context.DisposeAsync();
         timer?.Dispose();
-    }
-
-    private async Task OnOficinaChanged(ChangeEventArgs e)
-    {
-        selectedOficinaId = int.TryParse(e.Value?.ToString(), out var id) ? id : (int?)null;
-        await CargarOperariosYPuestos();
-        await ActualizarAtencionesFiltradas();
     }
 
     private async Task ActualizarAtencionesFiltradas()

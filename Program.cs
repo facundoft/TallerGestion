@@ -19,12 +19,6 @@ namespace TallerGestion
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                })
-                .ConfigureServices((hostContext, services) =>
-                {
-                    // Aquí agregamos el DbContextFactory
-                    services.AddDbContextFactory<GestionContext>(options =>
-                        options.UseMySQL(hostContext.Configuration.GetConnectionString("server=127.0.0.1;port=3306;database=gestion;user=root;password=tecnologo")));
                 });
     }
 }

@@ -1,0 +1,97 @@
+﻿@using ChartJs.Blazor.LineChart
+
+<div style="max-width:900px">
+    <Chart Config="_config" @ref="_chart"></Chart>
+</div>
+
+@code {
+    [Parameter]
+    public List<int> AtencionesMes { get; set; }
+
+    private LineConfig _config;
+    public Chart _chart;
+
+    protected override void OnInitialized()
+    {
+         _config = new LineConfig
+            {
+                Options = new LineOptions
+                {
+                    Responsive = true,
+                    Title = new OptionsTitle
+                    {
+                        Display = true,
+                        Text = "Atenciones por mes"
+                    },
+                    Tooltips = new Tooltips
+                    {
+                        Mode = InteractionMode.Nearest,
+                        Intersect = true
+                    },
+                    Hover = new Hover
+                    {
+                        Mode = InteractionMode.Nearest,
+                        Intersect = true
+                    },
+                    Scales = new Scales
+                    {
+                        XAxes = new List<CartesianAxis>
+                    {
+                        new CategoryAxis
+                        {
+                            ScaleLabel = new ScaleLabel
+                            {
+                                LabelString = "Month"
+                            }
+                        }
+                    },
+                        YAxes = new List<CartesianAxis>
+                    {
+                        new LinearCartesianAxis
+                        {
+                            ScaleLabel = new ScaleLabel
+                            {
+                                LabelString = "Value"
+                            }
+                        }
+                    }
+                    }
+                }
+            };
+
+
+
+        foreach (string dia in new[] { "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre" })
+        {
+            _config.Data.Labels.Add(dia);
+        }
+
+        LineDataset<int> dataset = new LineDataset<int>(AtencionesMes)
+            {
+                Label = "Meses",
+                BackgroundColor = ColorUtil.ColorString(255,0,0),
+                BorderColor = ColorUtil.ColorString(255, 0, 0),
+                Fill = FillingMode.Disabled
+            };
+
+        _config.Data.Datasets.Add(dataset);
+    }
+    public void UpdateChart( List<int> atencionesMes)
+    {
+        RemoveDataset();
+
+        LineDataset<int> dataset = new LineDataset<int>(atencionesMes)
+        {
+            Label = "Meses",
+            BackgroundColor = ColorUtil.ColorString(255,0,0),
+            BorderColor = ColorUtil.ColorString(255, 0, 0),
+            Fill = FillingMode.Disabled
+        };
+        
+        _config.Data.Datasets.Add(dataset);
+    }
+    private void RemoveDataset()
+    {
+        _config.Data.Datasets.Clear();
+    }
+}
