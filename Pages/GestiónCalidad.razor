@@ -62,17 +62,22 @@ else if (Modalidad == "PERIODO")
         <option value="Finalizado">Finalizado</option>
     </select>
     <form class="row g-3">
-
+        <div class="col-auto form-check">
+            <input class="form-check-input" type="checkbox" @bind="UseDate" id="flexCheckDefault">
+            <label class="form-check-label" for="flexCheckDefault">
+                Usar fecha
+            </label>
+        </div>
         <div class="col-auto">
             <label for="inputDateStart" class="visually-hidden mt-1">Fecha Inicio</label>
-            <input type="date" @bind="DateStart" class="form-control" id="inputDateStart">
+            <input disabled="@(!UseDate)" type="date" @bind="DateStart" class="form-control" id="inputDateStart">
         </div>
         <div class="col-auto">
-            <label for="inputDateFinish" class="visually-hidden mt-1">Fecha fin</label>
-            <input type="date" @bind="DateFinish" class="form-control" id="inputDateFinish">
+            <label for="inputDateFinish" class="visually-hidden mt-1">Fecha Fin</label>
+            <input disabled="@(!UseDate)" type="date" @bind="DateFinish" class="form-control" id="inputDateFinish">
         </div>
         <div class="col-auto">
-            <label for="inputOficina" class="visually-hidden mt-1">Fecha fin</label>
+            <label for="inputOficina" class="visually-hidden mt-1">Oficina</label>
             <select @bind="SelectOficinaFiltro" class="form-control" id="inputOficina">
                 <option value="-1">Todas las oficinas</option>
                 @foreach (var oficina in oficinas)
@@ -123,7 +128,7 @@ else if (Modalidad == "PERIODO")
     DateTime DateStart = DateTime.MinValue;
     DateTime DateFinish = DateTime.MaxValue;
     List<Oficinascomerciales> oficinas = [];
-
+    bool UseDate = false;
     string Modalidad = "TIEMPOREAL";
     int CountAtenciones = 0;
     int CountClientesEspera = 0;
@@ -148,7 +153,15 @@ else if (Modalidad == "PERIODO")
     {
         try
         {
+            if (!UseDate)
+            {
+                atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateTime.MinValue, DateTime.MaxValue, FiltroEstado, SelectOficinaFiltro);
+
+            }
+            else
+            {
             atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado, SelectOficinaFiltro);
+            }
 
             AtencionesPorDiaSemana = [0,0,0,0,0,0,0];
             AtencionesPorMes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];

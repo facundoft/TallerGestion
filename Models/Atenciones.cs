@@ -59,6 +59,11 @@ public partial class Atenciones
         else return "";
     }
 
+    public string GetCICliente()
+    {
+        return Cliente != null ? Cliente.CedulaIdentidad : ":(";
+    }
+
     public Atenciones(int? clientId, int? oficinaId, int? puestoId, int? operarioId, int? tramiteId, DateTime? fechaHoraLlegada, DateTime? fechaHoraAtencion, DateTime? fechaHoraFinalizacion, string estado, sbyte? segundaLlamado)
     {
         ClienteId = clientId;

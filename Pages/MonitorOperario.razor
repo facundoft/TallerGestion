@@ -61,7 +61,7 @@ else
                 <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
 
                     <PropertyColumn Property="atenciones => atenciones.AtencionId" Title="Nro Atención" />
-                    <PropertyColumn Property="atenciones => atenciones.Cliente.CedulaIdentidad" Title="CI Cliente" />
+                    <PropertyColumn Property="atenciones => atenciones.GetCICliente()" Title="CI Cliente" />
                     <PropertyColumn Property="atenciones => atenciones.OficinaId" Title="Oficina" />
                     <PropertyColumn Property="atenciones => atenciones.GetPuesto()" Title="Puesto" />
                     <PropertyColumn Property="atenciones => atenciones.GetNombreOperario()" Title="Operario" />
@@ -157,7 +157,8 @@ else
     private bool mostrarFormulario = true;
     private bool operariosDisponibles = false;
     private bool puestosDisponibles = false;
-    private IQueryable<Atenciones>? atencionesFiltradas;
+    private IQueryable<Atenciones>? atencionesFiltradas = Enumerable.Empty<Atenciones>().AsQueryable();
+
 
     // Modal and countdown states
     private bool showModal = false;
@@ -230,10 +231,11 @@ else
     {
         if (selectedOficinaId.HasValue)
         {
-            using var newContext = DbFactory.CreateDbContext();
+            await using var newContext = DbFactory.CreateDbContext();
             var atenciones = await newContext.Atenciones
                 .Where(a => a.OficinaId == selectedOficinaId.Value)
                 .Where(a => a.Estado != "Finalizada" && a.Estado != "NA")
+                .Include(a => a.Cliente)
                 .OrderBy(a => a.FechaHoraLlegada)
                 .ToListAsync();
 
