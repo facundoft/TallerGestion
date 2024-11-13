@@ -50,15 +50,15 @@
 else
 {
     <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-baseline mb-4">
             <h1>Personas en Espera</h1>
             <button class="btn btn-secondary" @onclick="VolverAlFormulario">Volver</button>
         </div>
 
         @if (atencionesFiltradas != null)
         {
-            <div class="table-responsive">
-                <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
+            <div class="table-responsive tabla-atenciones">
+                <QuickGrid Class="table table-striped table-hover small" Items="atencionesFiltradas">
 
                     <PropertyColumn Property="atenciones => atenciones.AtencionId" Title="Nro Atención" />
                     <PropertyColumn Property="atenciones => atenciones.GetCICliente()" Title="CI Cliente" />

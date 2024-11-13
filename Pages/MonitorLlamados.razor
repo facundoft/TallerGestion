@@ -51,7 +51,7 @@
                             : $"called {(atencion.SegundaLlamado == 2 ? "second-call" : "")}")">
                             <div class="ticket-info">
                                 <span class="ticket-number">@atencion.AtencionId</span>
-                                <span class="desk-number">PUESTO @atencion.PuestoId</span>
+                                <span class="desk-number">PUESTO @atencion.Puesto.NumeroPuesto</span>
                             </div>
                         </div>
                     }
@@ -72,7 +72,7 @@
                         <div class="ticket attended">
                             <div class="ticket-info">
                                 <span class="ticket-number">@atencion.AtencionId</span>
-                                <span class="desk-number">PUESTO @atencion.PuestoId</span>
+                                <span class="desk-number">PUESTO @atencion.Puesto.NumeroPuesto</span>
                             </div>
                         </div>
                     }
@@ -133,12 +133,7 @@
             Console.WriteLine($"Error al iniciar SignalR: {ex.Message}");
         }
     }
-
-    private async Task OnOficinaChanged(ChangeEventArgs e)
-    {
-        selectedOficinaId = int.TryParse(e.Value?.ToString(), out var id) ? id : (int?)null;
-        await ActualizarAtenciones();
-    }
+    
 
     private async Task ActualizarAtenciones()
     {
@@ -159,6 +154,8 @@
                 atencionesLlamando = await newContext.Atenciones
                     .Where(a => a.OficinaId == selectedOficinaId.Value)
                     .Where(a => a.Estado == "Llamando")
+                    .Include(a=>a.Puesto)
+
                     .OrderByDescending(a => a.FechaHoraLlegada)
                     .ToListAsync();
 
@@ -167,6 +164,7 @@
                     .Where(a => a.OficinaId == selectedOficinaId.Value)
                     .Where(a => a.Estado == "En Progreso")
                     .OrderByDescending(a => a.FechaHoraAtencion)
+                    .Include(a=>a.Puesto)
                     .Take(10) // últimas 10 atenciones
                     .ToListAsync();
 

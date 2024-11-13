@@ -23,25 +23,11 @@
         overflow: hidden scroll;
     }
 </style>
-<h3>Gestión de calidad</h3>
-<div style="width: 600px">
-    @if (cantAtencionesTramites.Count > 0)
-    {
-        <AtencionesPorTramiteChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></AtencionesPorTramiteChart>
-    }
-    @if (AtencionesPorDiaSemana.Any())
-    {
-        <AtencionesPorDiaSemanaChart @ref="AtencionesPorDiaSemanaChart" AtencionesDias="AtencionesPorDiaSemana"></AtencionesPorDiaSemanaChart>
-    }
-    @if(AtencionesPorMes.Any())
-    {
-        <AtencionesPorFecha AtencionesMes="AtencionesPorMes" @ref="AtencionesPorFecha"></AtencionesPorFecha>
-    }
-</div>
+
 <div style="max-width: 900px">
     
-<h2>Ver información de:</h2>
-<select class="form-control" @bind="Modalidad">
+<label for="modalidad" class="font-weight-bold">Ver información de:</label>
+<select name="modalidad" id="modalidad" class="form-control" @bind="Modalidad">
     <option value="TIEMPOREAL">Tiempo real</option>
     <option value="PERIODO">Por periodo</option>
 </select>
@@ -49,7 +35,6 @@
 {
     <p>Cantidad de atenciones actuales: <span>@CountAtenciones</span></p>
     <p>Cantidad de clientes en espera: <span>@CountClientesEspera</span></p>
-
 }
 else if (Modalidad == "PERIODO")
 {
@@ -62,9 +47,9 @@ else if (Modalidad == "PERIODO")
         <option value="Finalizado">Finalizado</option>
     </select>
     <form class="row g-3">
-        <div class="col-auto form-check">
+        <div class="col-auto form-check d-flex align-items-center">
             <input class="form-check-input" type="checkbox" @bind="UseDate" id="flexCheckDefault">
-            <label class="form-check-label" for="flexCheckDefault">
+            <label class="form-check-label ms-2" for="flexCheckDefault">
                 Usar fecha
             </label>
         </div>
@@ -86,7 +71,6 @@ else if (Modalidad == "PERIODO")
                 }
             </select>
         </div>
-
     </form>
     <button type="button" @onclick="ActualizarAtencionesFiltradasBtnClick" class="btn btn-primary mt-1">Buscar</button>
     <h3 class="mt-2">Promedio de Tiempos</h3>
@@ -112,7 +96,20 @@ else if (Modalidad == "PERIODO")
 
 }
 </div>
-
+<div style="width: 600px">
+    @if (cantAtencionesTramites.Count > 0)
+    {
+    <AtencionesPorTramiteChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></AtencionesPorTramiteChart>
+    }
+    @if (AtencionesPorDiaSemana.Any())
+    {
+    <AtencionesPorDiaSemanaChart @ref="AtencionesPorDiaSemanaChart" AtencionesDias="AtencionesPorDiaSemana"></AtencionesPorDiaSemanaChart>
+    }
+    @if(AtencionesPorMes.Any())
+    {
+    <AtencionesPorFecha AtencionesMes="AtencionesPorMes" @ref="AtencionesPorFecha"></AtencionesPorFecha>
+    }
+</div>
 @code {
     Dictionary<string, double> Promedios = new Dictionary<string, double>();
     AtencionesPorTramiteChart CantAtencionesTramitesChart;
