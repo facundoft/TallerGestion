@@ -1,6 +1,6 @@
 # Gestión de Oficinas
 
-Un sistema web desarrollado con .NET 8 y Blazor, diseñado para gestionar oficinas de atención en diferentes departamentos del país. Este proyecto ofrece funcionalidades en tiempo real gracias a SignalR, con una interfaz interactiva y gráficos dinámicos utilizando ChartJs.
+Un sistema web desarrollado con .NET 8 y Blazor, diseñado para gestionar oficinas de atención en diferentes departamentos del país. Este proyecto ofrece funcionalidades en tiempo real gracias a SignalR, con una interfaz interactiva y gráficos dinámicos utilizando ChartJs.Blazor
 
 ## Características
 
