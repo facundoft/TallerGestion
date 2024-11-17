@@ -5,7 +5,7 @@ Un sistema web desarrollado con .NET 8 y Blazor, diseñado para gestionar oficin
 ## Características
 
 ### Registro de Usuarios
-- Permite registrar nuevos usuarios en el sistema para acceder a las funcionalidades.
+- Permite registrar nuevos usuarios en el sistema para registrar atenciones de un tramite.
 
 ### Monitor de Atenciones en Tiempo Real
 - Visualiza el estado actual de las atenciones en todas las oficinas.
@@ -32,7 +32,7 @@ Un sistema web desarrollado con .NET 8 y Blazor, diseñado para gestionar oficin
 - SignalR para garantizar actualizaciones automáticas y comunicación en tiempo real entre las páginas del sistema.
 
 ### Gráficas Interactivas
-- ChartJs para representar datos de manera visual e intuitiva.
+- ChartJs.Blazor para representar datos de manera visual e intuitiva.
 
 ### Deploy
 El proyecto está disponible en [Azure](https://tallergestion.azurewebsites.net).
