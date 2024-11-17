@@ -41,6 +41,28 @@ public partial class Atenciones
     {
     }
 
+    public string GetPuesto()
+    {
+        if (Puesto != null)
+        {
+            return Puesto.NumeroPuesto.ToString();
+        }
+        else return "";
+    }
+
+    public string GetNombreOperario()
+    {
+        if (Operario != null)
+        {
+            return Operario.Nombre + " " + Operario.Apellido;
+        }
+        else return "";
+    }
+
+    public string GetCICliente()
+    {
+        return Cliente != null ? Cliente.CedulaIdentidad : ":(";
+    }
 
     public Atenciones(int? clientId, int? oficinaId, int? puestoId, int? operarioId, int? tramiteId, DateTime? fechaHoraLlegada, DateTime? fechaHoraAtencion, DateTime? fechaHoraFinalizacion, string estado, sbyte? segundaLlamado)
     {

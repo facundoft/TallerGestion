@@ -24,13 +24,23 @@ public class PuestosAtencionService
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeletePuestoAsync(int id)
+    public async Task<bool> DeletePuestoAsync(int id)
     {
         var puesto = await _context.Puestosatencion.FindAsync(id);
         if (puesto != null)
         {
-            _context.Puestosatencion.Remove(puesto);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Puestosatencion.Remove(puesto);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                _context.ChangeTracker.Clear();
+            }
         }
+        return false;
     }
 }

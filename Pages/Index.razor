@@ -1,7 +1,35 @@
 ﻿@page "/"
+@inject NavigationManager NavigationManager
+@inherits LayoutComponentBase
+@inject OficinasComercialService OficinasComercialService
+@using TallerGestion.Models
 
-<h1>Hello, world!</h1>
+<div class="content-container">
+    <h1>Bienvenido a la Gestión de Atenciones</h1>
+    <p>Esta plataforma te permite gestionar y monitorear las atenciones de manera eficiente.</p>
 
-Welcome to your new app.
+    <!-- Sección de botones de acceso rápido -->
+    <div class="quick-access mt-4">
+        <h3>Acceso Rápido</h3>
+        <div class="btn-group" role="group">
+            <NavLink class="btn btn-primary" href="PuestosRegistro">
+                <i class="fa-solid fa-right-to-bracket me-2"></i> Registro de Atención
+            </NavLink>
+            <NavLink class="btn btn-success" href="atenciones">
+                <i class="fa-solid fa-chalkboard-user me-2"></i> Monitor de Operarios
+            </NavLink>
+            <NavLink class="btn btn-info" href="/admin">
+                <i class="fa-solid fa-user-tie me-2" aria-hidden="true"></i> Monitor Administrador
+            </NavLink>
+            <NavLink class="btn btn-dark" href="monitor">
+                <i class="fa-solid fa-desktop me-2" aria-hidden="true"></i> Monitor Atenciones
+            </NavLink>
+            <NavLink class="btn btn-danger" href="gestion">
+                <i class="fa-solid fa-certificate me-2"></i> Gestión de Calidad
+            </NavLink>
+        </div>
+    </div>
+</div>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+
+

@@ -1,0 +1,319 @@
+﻿@page "/gestion"
+@using TallerGestion.Pages
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using TallerGestion.Models
+@using TallerGestion.Data
+@using TallerGestion.Data.Persistence
+@using Microsoft.AspNetCore.SignalR.Client
+@using TallerGestion.Hubs
+@using ChartJs.Blazor.PieChart
+@using System.Threading
+
+@inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject GestionCalidadService GestionCalidadService
+@inject AtencionesService AtencionesService
+@inject OficinasComercialService OficinasComercialService
+@using TallerGestion.Pages.Components.Graficas
+
+<style>
+    .tabla-atenciones {
+        max-height: 600px;
+        overflow: hidden scroll;
+    }
+</style>
+
+<div style="max-width: 900px">
+
+    <label for="modalidad" class="font-weight-bold">Ver información de:</label>
+    <select name="modalidad" id="modalidad" class="form-control" @bind="Modalidad">
+        <option value="TIEMPOREAL">Tiempo real</option>
+        <option value="PERIODO">Por periodo</option>
+    </select>
+    @if (Modalidad == "TIEMPOREAL")
+    {
+        <p>Cantidad de atenciones actuales: <span>@CountAtenciones</span></p>
+        <p>Cantidad de clientes en espera: <span>@CountClientesEspera</span></p>
+    }
+    else if (Modalidad == "PERIODO")
+    {
+        <label class="mt-1" for="filtro-estado">Filtrar por estado</label>
+        <select class="form-control" id="filtro-estado" name="filtro-estado" @bind="FiltroEstado">
+            <option value="todos">Todos</option>
+            <option value="En Espera">En espera</option>
+            <option value="En Atención">En Atención</option>
+            <option value="En Progreso">En progreso</option>
+            <option value="Finalizado">Finalizado</option>
+        </select>
+        <form class="row g-3">
+            <div class="col-auto form-check d-flex align-items-center">
+                <input class="form-check-input" type="checkbox" @bind="UseDate" id="flexCheckDefault">
+                <label class="form-check-label ms-2" for="flexCheckDefault">
+                    Usar fecha
+                </label>
+            </div>
+            <div class="col-auto">
+                <label for="inputDateStart" class="visually-hidden mt-1">Fecha Inicio</label>
+                <input disabled="@(!UseDate)" type="date" @bind="DateStart" class="form-control" id="inputDateStart">
+            </div>
+            <div class="col-auto">
+                <label for="inputDateFinish" class="visually-hidden mt-1">Fecha Fin</label>
+                <input disabled="@(!UseDate)" type="date" @bind="DateFinish" class="form-control" id="inputDateFinish">
+            </div>
+            <div class="col-auto">
+                <label for="inputOficina" class="visually-hidden mt-1">Oficina</label>
+                <select @bind="SelectOficinaFiltro" class="form-control" id="inputOficina">
+                    <option value="-1">Todas las oficinas</option>
+                    @foreach (var oficina in oficinas)
+                    {
+                        <option value="@oficina.OficinaId">@oficina.Nombre</option>
+                    }
+                </select>
+            </div>
+        </form>
+        <button type="button" @onclick="ActualizarAtencionesFiltradasBtnClick" class="btn btn-primary mt-1">Buscar</button>
+        <h3 class="mt-2">Promedio de Tiempos</h3>
+        <ul>
+            <li>Promedio de tiempo de espera: @Promedios["Espera"] minutos</li>
+            <li>Promedio de tiempo de finalizacion: @Promedios["Finalizacion"] minutos</li>
+        </ul>
+        <h4 class="mt-2">Cantidad: @atencionesFiltradas.Count()</h4>
+        <div class="table-responsive tabla-atenciones">
+            <QuickGrid Class="table table-striped table-hover small" Items="atencionesFiltradas">
+                <PropertyColumn Property="atenciones => atenciones.Cliente.CedulaIdentidad" Title="Cliente" />
+                <PropertyColumn Property="atenciones => atenciones.Oficina.Nombre" Title="Oficina" />
+                <PropertyColumn Property="atenciones => atenciones.GetPuesto()" Title="Puesto" />
+                <PropertyColumn Property="atenciones => atenciones.GetNombreOperario()" Title="Operario" />
+                <PropertyColumn Property="atenciones => atenciones.Tramite.DescripcionTramite" Title="Trámite" />
+                <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" Title="Hora Llegada" />
+                <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" Title="Hora Atención" />
+                <PropertyColumn Property="atenciones => atenciones.FechaHoraFinalizacion" Title="Hora Finalización" />
+                <PropertyColumn Property="atenciones => atenciones.Estado" Title="Estado" />
+                <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
+            </QuickGrid>
+        </div>
+
+    }
+</div>
+<div style="width: 600px">
+    @if (cantAtencionesTramites.Count > 0)
+    {
+        <AtencionesPorTramiteChart CantAtencionesTramites="cantAtencionesTramites" @ref="CantAtencionesTramitesChart"></AtencionesPorTramiteChart>
+    }
+    @if (AtencionesPorDiaSemana.Any())
+    {
+        <AtencionesPorDiaSemanaChart @ref="AtencionesPorDiaSemanaChart" AtencionesDias="AtencionesPorDiaSemana"></AtencionesPorDiaSemanaChart>
+    }
+    @if (AtencionesPorMes.Any())
+    {
+        <AtencionesPorFecha AtencionesMes="AtencionesPorMes" @ref="AtencionesPorFecha"></AtencionesPorFecha>
+    }
+</div>
+@code {
+
+
+
+    Dictionary<string, double> Promedios = new Dictionary<string, double>();
+    AtencionesPorTramiteChart CantAtencionesTramitesChart;
+    AtencionesPorDiaSemanaChart AtencionesPorDiaSemanaChart;
+    AtencionesPorFecha AtencionesPorFecha;
+
+    List<int> AtencionesPorDiaSemana = new List<int>();
+    List<int> AtencionesPorMes = new List<int>();
+    private Dictionary<int, string> TramiteMapper = new Dictionary<int, string> { };
+    private List<CantAtencionesTramite> cantAtencionesTramites = [];
+    string FiltroEstado = "todos";
+    int SelectOficinaFiltro = -1;
+    DateTime DateStart = DateTime.MinValue;
+    DateTime DateFinish = DateTime.MaxValue;
+    List<Oficinascomerciales> oficinas = [];
+    bool UseDate = false;
+    string Modalidad = "TIEMPOREAL";
+    int CountAtenciones = 0;
+    int CountClientesEspera = 0;
+
+    private HubConnection? hubConnection;
+
+
+    private GestionContext context = default!;
+    private IQueryable<Atenciones>? atencionesFiltradas;
+
+    private Timer? updateTimer;
+
+
+    protected override async Task OnInitializedAsync()
+
+    {
+        await ConfigureSignalR();
+        updateTimer = new Timer(async _ =>
+        {
+            await ActualizarContadoresTiempoReal();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+
+
+        cantAtencionesTramites = await GestionCalidadService.GetCantAtencionesTramites();
+        oficinas = await OficinasComercialService.GetAllOficinasAsync();
+        context = DbFactory.CreateDbContext();
+        CountAtenciones = await context.Atenciones.Where(a => a.Estado == "En Progreso").CountAsync();
+        CountClientesEspera = await context.Atenciones.Where(a => a.Estado == "En Espera").CountAsync();
+        await ActualizarAtencionesFiltradas();
+        DateStart = DateFinish = DateTime.Now;
+    }
+
+
+
+
+
+    private async Task ActualizarContadoresTiempoReal()
+    {
+        // Crear un nuevo contexto para cada operación
+        using (var context = DbFactory.CreateDbContext())
+        {
+            CountAtenciones = await context.Atenciones
+                .Where(a => a.Estado == "En Progreso")
+                .CountAsync();
+            CountClientesEspera = await context.Atenciones
+                .Where(a => a.Estado == "En Espera")
+                .CountAsync();
+        }
+    }
+
+
+    private async Task ConfigureSignalR()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/atencionHub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<int>("NuevaAtencion", async (_) =>
+        {
+            await ActualizarContadoresTiempoReal();
+            await ActualizarAtencionesFiltradasBtnClick();
+            await InvokeAsync(StateHasChanged);
+
+
+
+        });
+
+        hubConnection.On<int>("AtencionActualizada", async (_) =>
+        {
+            await ActualizarContadoresTiempoReal();
+            await ActualizarAtencionesFiltradasBtnClick();
+            await InvokeAsync(StateHasChanged);
+
+
+        });
+
+        try
+        {
+            await hubConnection.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al iniciar SignalR: {ex.Message}");
+        }
+    }
+
+
+
+
+
+    private async Task ActualizarAtencionesFiltradas()
+    {
+        try
+        {
+            if (!UseDate)
+            {
+                atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateTime.MinValue, DateTime.MaxValue, FiltroEstado, SelectOficinaFiltro);
+
+            }
+            else
+            {
+                atencionesFiltradas = await AtencionesService.GetAtencionesAsyncFilter(DateStart, DateFinish, FiltroEstado, SelectOficinaFiltro);
+            }
+
+            AtencionesPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
+            AtencionesPorMes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            foreach (var atencion in atencionesFiltradas)
+            {
+                if (atencion.FechaHoraAtencion.HasValue)
+                {
+                    AtencionesPorDiaSemana[(int)atencion.FechaHoraAtencion.Value.DayOfWeek]++;
+                    AtencionesPorMes[(int)atencion.FechaHoraAtencion.Value.Month]++;
+                }
+            }
+
+            foreach (var ct in cantAtencionesTramites)
+            {
+                ct.CantAtenciones = 0;
+            }
+
+            foreach (var atencion in atencionesFiltradas)
+            {
+                foreach (var ct in cantAtencionesTramites)
+                {
+                    if (ct.TramiteID == atencion.TramiteId)
+                    {
+                        ct.CantAtenciones++;
+                        break;
+                    }
+                }
+            }
+
+            GetPromedios();
+
+        }
+        catch (Exception e)
+        {
+        }
+        await InvokeAsync(StateHasChanged); // Asegura que la UI se actualice
+
+    }
+
+    private async Task ActualizarAtencionesFiltradasBtnClick()
+    {
+        await ActualizarAtencionesFiltradas();
+
+        AtencionesPorDiaSemanaChart.UpdateChart(AtencionesPorDiaSemana);
+
+        AtencionesPorFecha.UpdateChart(AtencionesPorMes);
+
+        CantAtencionesTramitesChart.UpdateChart(cantAtencionesTramites);
+
+    }
+
+    public void GetPromedios()
+    {
+
+        Promedios["Espera"] = 0;
+        Promedios["Finalizacion"] = 0;
+        int countEspera = 0;
+        int countFinalizado = 0;
+        TimeSpan span;
+
+        foreach (var atencion in atencionesFiltradas)
+        {
+            if (atencion.FechaHoraAtencion.HasValue && atencion.FechaHoraLlegada.HasValue)
+            {
+                span = atencion.FechaHoraAtencion.Value - atencion.FechaHoraLlegada.Value;
+                Promedios["Espera"] += span.TotalMinutes;
+                countEspera++;
+                if (atencion.FechaHoraFinalizacion.HasValue)
+                {
+                    span = atencion.FechaHoraFinalizacion.Value - atencion.FechaHoraAtencion.Value;
+                    Promedios["Finalizacion"] += span.TotalMinutes;
+                    countFinalizado++;
+                }
+            }
+        }
+
+        Promedios["Espera"] = Promedios["Espera"] / countEspera;
+        Promedios["Finalizacion"] = Promedios["Finalizacion"] / countFinalizado;
+    }
+
+}
+

@@ -10,7 +10,7 @@
 @inject IDbContextFactory<TallerGestion.Data.Persistence.GestionContext> DbFactory
 @inject IJSRuntime JSRuntime
 @inject NavigationManager NavigationManager
-
+@inject OficinasComercialService OficinasComercialService
 <PageTitle>Index</PageTitle>
 
 @if (mostrarFormulario)
@@ -19,20 +19,9 @@
         <h1 class="mb-4">Login de Puesto</h1>
         <EditForm Model="@this" OnValidSubmit="OcultarFormulario">
             <div class="form-group mb-3">
-                <label class="form-label">Seleccionar Oficina</label>
-                <select class="form-select" @onchange="@(e => OnOficinaChanged(e))">
-                    <option value="">-- Selecciona una Oficina --</option>
-                    @foreach (var oficina in oficinas)
-                    {
-                        <option value="@oficina.OficinaId">@oficina.Nombre</option>
-                    }
-                </select>
-            </div>
-
-            <div class="form-group mb-3">
                 <label class="form-label">Seleccionar Operario</label>
-                <select class="form-select" @bind="selectedOperarioId" disabled="@(!operariosDisponibles)">
-                    <option value="">-- Selecciona un Operario --</option>
+                <select class="form-select" @onchange="SelectOperarioOnChange" disabled="@(!operariosDisponibles)">
+                    <option value="" selected disabled>-- Selecciona un Operario --</option>
                     @foreach (var operario in operarios)
                     {
                         <option value="@operario.OperarioId">@operario.Nombre @operario.Apellido</option>
@@ -42,15 +31,16 @@
 
             <div class="form-group mb-3">
                 <label class="form-label">Seleccionar Puesto de Atención</label>
-                <select class="form-select" @bind="selectedPuestoId" disabled="@(!puestosDisponibles)">
-                    <option value="">-- Selecciona un Puesto --</option>
+                <select class="form-select" @onchange="SelectPuestoOnChange" disabled="@(!puestosDisponibles)">
+                    <option value="" selected disabled>-- Selecciona un Puesto --</option>
                     @foreach (var puesto in puestos)
                     {
                         <option value="@puesto.PuestoId">Puesto @puesto.NumeroPuesto</option>
                     }
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary" disabled="@(!operariosDisponibles || !puestosDisponibles)">
+
+            <button type="submit" class="btn btn-primary mt-1" disabled="@FormularioInvalido">
                 Iniciar Sesión
             </button>
         </EditForm>
@@ -59,19 +49,21 @@
 else
 {
     <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-baseline mb-4">
             <h1>Personas en Espera</h1>
             <button class="btn btn-secondary" @onclick="VolverAlFormulario">Volver</button>
         </div>
 
         @if (atencionesFiltradas != null)
         {
-            <div class="table-responsive">
-                <QuickGrid Class="table table-striped table-hover" Items="atencionesFiltradas">
-                    <PropertyColumn Property="atenciones => atenciones.ClienteId" Title="Cliente" />
+            <div class="table-responsive tabla-atenciones">
+                <QuickGrid Class="table table-striped table-hover small" Items="atencionesFiltradas">
+
+                    <PropertyColumn Property="atenciones => atenciones.AtencionId" Title="Nro Atención" />
+                    <PropertyColumn Property="atenciones => atenciones.GetCICliente()" Title="CI Cliente" />
                     <PropertyColumn Property="atenciones => atenciones.OficinaId" Title="Oficina" />
-                    <PropertyColumn Property="atenciones => atenciones.PuestoId" Title="Puesto" />
-                    <PropertyColumn Property="atenciones => atenciones.OperarioId" Title="Operario" />
+                    <PropertyColumn Property="atenciones => atenciones.GetPuesto()" Title="Puesto" />
+                    <PropertyColumn Property="atenciones => atenciones.GetNombreOperario()" Title="Operario" />
                     <PropertyColumn Property="atenciones => atenciones.TramiteId" Title="Trámite" />
                     <PropertyColumn Property="atenciones => atenciones.FechaHoraLlegada" Title="Hora Llegada" />
                     <PropertyColumn Property="atenciones => atenciones.FechaHoraAtencion" Title="Hora Atención" />
@@ -80,7 +72,7 @@ else
                     <PropertyColumn Property="atenciones => atenciones.SegundaLlamado" Title="Llamado" />
 
                     <TemplateColumn Context="atenciones">
-                        @if (atenciones.Estado != "En Progreso")
+                        @if (atenciones.Estado == "En Espera")
                         {
                             <button class="btn btn-primary btn-sm" @onclick="() => IniciarLlamado(atenciones)">
                                 Atender
@@ -155,8 +147,8 @@ else
 }
 
 @code {
+
     private GestionContext context = default!;
-    private List<Oficinascomerciales> oficinas = new();
     private List<Operarios> operarios = new();
     private List<PuestoAtencion> puestos = new();
     private int? selectedOficinaId;
@@ -165,9 +157,10 @@ else
     private bool mostrarFormulario = true;
     private bool operariosDisponibles = false;
     private bool puestosDisponibles = false;
-    private IQueryable<Atenciones>? atencionesFiltradas;
+    private IQueryable<Atenciones>? atencionesFiltradas = Enumerable.Empty<Atenciones>().AsQueryable();
 
-    // Modal and countdown states
+
+
     private bool showModal = false;
     private bool countdownRunning = false;
     private bool atencionConfirmada = false;
@@ -176,14 +169,59 @@ else
     private int tiempoRestante = 10;
     private System.Threading.Timer? timer;
     private HubConnection? hubConnection;
-    // ... resto de las variables existentes ...
+
+
+
+
+
+    private bool FormularioInvalido = true;
+
+
 
     protected override async Task OnInitializedAsync()
     {
         context = DbFactory.CreateDbContext();
-        oficinas = await context.Oficinascomerciales.ToListAsync();
+        selectedOficinaId = OficinasComercialService.OficinaActual.OficinaId;
+        await CargarOperariosYPuestos();
+        await ActualizarAtencionesFiltradas();
         await ConfigureSignalR();
     }
+
+    private async void SelectOperarioOnChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            selectedOperarioId = id;
+            ValidarFormulario();
+        }
+        else
+        {
+            selectedOperarioId = null;
+            FormularioInvalido = true;
+        }
+        StateHasChanged();
+    }
+
+    private async void SelectPuestoOnChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            selectedPuestoId = id;
+            ValidarFormulario();
+        }
+        else
+        {
+            selectedPuestoId = null;
+            FormularioInvalido = true;
+        }
+        StateHasChanged();
+    }
+
+    private void ValidarFormulario()
+    {
+        FormularioInvalido = !selectedOperarioId.HasValue || !selectedPuestoId.HasValue;
+    }
+
 
     private async Task ConfigureSignalR()
     {
@@ -232,21 +270,15 @@ else
         timer?.Dispose();
     }
 
-    private async Task OnOficinaChanged(ChangeEventArgs e)
-    {
-        selectedOficinaId = int.TryParse(e.Value?.ToString(), out var id) ? id : (int?)null;
-        await CargarOperariosYPuestos();
-        await ActualizarAtencionesFiltradas();
-    }
-
     private async Task ActualizarAtencionesFiltradas()
     {
         if (selectedOficinaId.HasValue)
         {
-            using var newContext = DbFactory.CreateDbContext();
+            await using var newContext = DbFactory.CreateDbContext();
             var atenciones = await newContext.Atenciones
                 .Where(a => a.OficinaId == selectedOficinaId.Value)
                 .Where(a => a.Estado != "Finalizada" && a.Estado != "NA")
+                .Include(a => a.Cliente)
                 .OrderBy(a => a.FechaHoraLlegada)
                 .ToListAsync();
 
